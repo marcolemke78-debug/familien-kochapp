@@ -8,6 +8,7 @@ export type Ingredient = {
   unit: string | null;
   name: string;
   heading?: true; // Zwischenüberschrift wie "Für die Soße" (ohne Menge, wird nicht umgerechnet)
+  raw?: boolean; // true = roh, false = gegart, fehlt = unbekannt (Spec 06, Allergene "nur roh")
 };
 
 const UNICODE_FRACTIONS: Record<string, number> = { "¼": 0.25, "½": 0.5, "¾": 0.75, "⅓": 1 / 3, "⅔": 2 / 3, "⅛": 0.125 };

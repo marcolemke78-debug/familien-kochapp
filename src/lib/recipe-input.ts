@@ -94,6 +94,11 @@ export function parseRecipeForm(
   fd: FormData,
 ): { success: true; data: RecipeInput } | { success: false; fieldErrors: FieldErrors } {
   const devices = [...new Set(strings(fd, "device"))];
+  // roh/gegart steht in einem zweiten Feld je Zeile; leere Zeilen fallen mitsamt Angabe weg
+  const rawValues = strings(fd, "ingredient_raw");
+  const ingredientRows = strings(fd, "ingredient")
+    .map((line, i) => ({ line: line.trim(), raw: rawValues[i] === "1" ? true : rawValues[i] === "0" ? false : undefined }))
+    .filter((row) => row.line);
   const result = schema.safeParse({
     clientId: fd.get("clientId"),
     title: fd.get("title"),
@@ -105,7 +110,7 @@ export function parseRecipeForm(
     tags: [...new Set(strings(fd, "tag"))],
     devices,
     hints: Object.fromEntries(devices.map((d) => [d, String(fd.get(`hint_${d}`) ?? "")])),
-    ingredients: nonEmpty(strings(fd, "ingredient")),
+    ingredients: ingredientRows.map((row) => row.line),
     steps: nonEmpty(strings(fd, "step")),
   });
 
@@ -132,7 +137,12 @@ export function parseRecipeForm(
       sourceNote: d.sourceNote ?? null,
       tags: d.tags,
       devices: d.devices.map((device) => ({ device, hint: d.hints[device] || null })),
-      ingredients: d.ingredients.map(parseIngredientLine),
+      ingredients: d.ingredients.map((line, i) => {
+        const ingredient = parseIngredientLine(line);
+        const raw = ingredientRows[i].raw;
+        // Überschriften sind keine Zutat, also auch nicht roh oder gegart
+        return ingredient.heading || raw === undefined ? ingredient : { ...ingredient, raw };
+      }),
       steps: d.steps,
     },
   };

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { checkIngredient, ingredientKey, recipeSuitability, type AllergenRule } from "./allergens";
+import { checkIngredient, ingredientKey, markIngredients, recipeSuitability, type AllergenRule } from "./allergens";
 
 // Nur erfundene Allergene – echte stehen ausschließlich in D1.
 const rule = (r: Partial<AllergenRule> = {}): AllergenRule => ({ id: 1, userId: 1, name: "Zorbel", synonyms: [], mode: "always", ...r });
@@ -80,5 +80,45 @@ describe("recipeSuitability", () => {
 
   it("mit Ersatz, wenn alle betroffenen Zutaten freigegebenen Ersatz haben", () => {
     expect(recipeSuitability([ing("Quimbe"), ing("Zorbel"), ing("Mehl")], rules, new Set(["quimbe", "zorbel"]))).toBe("mit_ersatz");
+  });
+});
+
+describe("markIngredients", () => {
+  const names = new Map([
+    [1, "Testperson A"],
+    [2, "Testperson B"],
+  ]);
+  const rules = [rule(), rule({ id: 2, userId: 2, name: "Quimbe", mode: "raw_only" })];
+
+  it("liefert je Zutat die Betroffenen mit Name und Allergen, Überschriften und Unbedenkliches = null", () => {
+    const marks = markIngredients(
+      [{ name: "Für den Teig", heading: true }, { name: "Mehl" }, { name: "Zorbelmus" }, { name: "Quimben" }],
+      rules,
+      [],
+      names,
+    );
+    expect(marks[0]).toBeNull();
+    expect(marks[1]).toBeNull();
+    expect(marks[2]).toEqual({ level: "red", people: [{ person: "Testperson A", allergen: "Zorbel", level: "red", replacement: null }] });
+    expect(marks[3]).toEqual({ level: "yellow", people: [{ person: "Testperson B", allergen: "Quimbe", level: "yellow", replacement: null }] });
+  });
+
+  it("gegart bei nur_roh ist unbedenklich, roh ist rot", () => {
+    const marks = markIngredients([{ name: "Quimbe", raw: false }, { name: "Quimbe", raw: true }], rules, [], names);
+    expect(marks[0]).toBeNull();
+    expect(marks[1]?.level).toBe("red");
+  });
+
+  it("freigegebener Ersatz der betroffenen Person entschärft die Zutat (level ok)", () => {
+    const subs = [{ ingredientKey: "zorbel", userId: 1, replacement: "Testersatz" }];
+    expect(markIngredients([{ name: "Zorbel" }], rules, subs, names)[0]).toEqual({
+      level: "ok",
+      people: [{ person: "Testperson A", allergen: "Zorbel", level: "red", replacement: "Testersatz" }],
+    });
+  });
+
+  it("Ersatz einer anderen Person zählt nicht", () => {
+    const subs = [{ ingredientKey: "zorbel", userId: 2, replacement: "Testersatz" }];
+    expect(markIngredients([{ name: "Zorbel" }], rules, subs, names)[0]?.level).toBe("red");
   });
 });

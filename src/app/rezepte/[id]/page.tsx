@@ -13,6 +13,8 @@ import { NoAccess } from "@/components/no-access";
 import { RecipePhoto } from "@/components/recipe-photo";
 import { DeviceBadge } from "@/components/device-badge";
 import { ScaledIngredients } from "@/components/scaled-ingredients";
+import { markIngredients } from "@/lib/allergens";
+import { listApprovedSubstitutions, listFamilyNames, listRules } from "@/lib/allergen-store";
 import { MarkTestedButton } from "@/components/mark-tested-button";
 import { DeleteRecipeButton } from "@/components/delete-recipe-button";
 import { formatMinutes } from "@/components/recipe-card";
@@ -36,6 +38,9 @@ export default async function RecipePage({ params, searchParams }: PageProps<"/r
   const activeLabel = active ? DEVICES.find((d) => d.value === active.device)?.label : null;
   // Beide Zeitstempel sind "JJJJ-MM-TT HH:MM:SS" aus SQLite, darum als Text vergleichbar
   const originalChanged = !!active?.convertedAt && recipe.updatedAt > active.convertedAt;
+  // Spec 06: Allergie-Markierungen der ganzen Familie
+  const [rules, approved, names] = await Promise.all([listRules(), listApprovedSubstitutions(recipe.id), listFamilyNames()]);
+  const marks = rules.length > 0 ? markIngredients(recipe.ingredients, rules, approved, names) : [];
   const convertible = DEVICES.filter((d) => !recipe.devices.some((x) => x.device === d.value));
 
   const hostname = recipe.sourceUrl ? new URL(recipe.sourceUrl).hostname.replace(/^www\./, "") : null;
@@ -144,7 +149,7 @@ export default async function RecipePage({ params, searchParams }: PageProps<"/r
 
       <div className={cn("grid gap-10", variants.length > 0 ? "mt-6" : "mt-10", "lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-12")}>
         <div className="lg:sticky lg:top-24 lg:self-start">
-          <ScaledIngredients ingredients={recipe.ingredients} baseServings={recipe.servings} />
+          <ScaledIngredients ingredients={recipe.ingredients} baseServings={recipe.servings} marks={marks} />
         </div>
 
         <section aria-labelledby="zubereitung" className="space-y-5">

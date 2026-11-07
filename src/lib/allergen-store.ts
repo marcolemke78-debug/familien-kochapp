@@ -1,6 +1,6 @@
 // Datenzugriff auf D1 für Allergie-Profile (Spec 06).
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import type { AllergenMode, AllergenRule } from "./allergens";
+import type { AllergenMode, AllergenRule, ApprovedSubstitution } from "./allergens";
 import type { AllergenInput } from "./allergen-input";
 
 type RuleRow = { id: number; user_id: number; name: string; synonyms: string; mode: AllergenMode };
@@ -40,4 +40,19 @@ export async function addRule(userId: number, input: AllergenInput): Promise<voi
 export async function deleteRule(ruleId: number, userId: number): Promise<boolean> {
   const result = await (await db()).prepare(`DELETE FROM allergen_rules WHERE id = ?1 AND user_id = ?2`).bind(ruleId, userId).run();
   return result.meta.changes > 0;
+}
+
+/** Anzeigenamen der Familie (für "betrifft Testperson A") */
+export async function listFamilyNames(): Promise<Map<number, string>> {
+  const { results } = await (await db()).prepare(`SELECT id, display_name FROM users`).all<{ id: number; display_name: string }>();
+  return new Map(results.map((u) => [u.id, u.display_name]));
+}
+
+/** Freigegebener Ersatz in einem Rezept (Vorschläge zählen nicht) */
+export async function listApprovedSubstitutions(recipeId: number): Promise<ApprovedSubstitution[]> {
+  const { results } = await (await db())
+    .prepare(`SELECT ingredient_key, user_id, replacement FROM substitutions WHERE recipe_id = ?1 AND status = 'freigegeben'`)
+    .bind(recipeId)
+    .all<{ ingredient_key: string; user_id: number; replacement: string }>();
+  return results.map((r) => ({ ingredientKey: r.ingredient_key, userId: r.user_id, replacement: r.replacement }));
 }

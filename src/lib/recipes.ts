@@ -46,7 +46,14 @@ type RecipeRow = {
   devices: string | null;
 };
 
-type IngredientRow = { quantity: number | null; quantity_max: number | null; unit: string | null; name: string; is_heading: number };
+type IngredientRow = {
+  quantity: number | null;
+  quantity_max: number | null;
+  unit: string | null;
+  name: string;
+  is_heading: number;
+  is_raw: number | null;
+};
 
 async function db() {
   const { env } = await getCloudflareContext({ async: true });
@@ -88,7 +95,7 @@ export async function getRecipe(id: number): Promise<Recipe | null> {
   const [recipe, ingredients, steps, tags] = await database.batch([
     database.prepare(`SELECT r.*, ${DEVICES_JSON} FROM recipes r WHERE r.id = ?1`).bind(id),
     database
-      .prepare(`SELECT quantity, quantity_max, unit, name, is_heading FROM ingredients WHERE recipe_id = ?1 ORDER BY position`)
+      .prepare(`SELECT quantity, quantity_max, unit, name, is_heading, is_raw FROM ingredients WHERE recipe_id = ?1 ORDER BY position`)
       .bind(id),
     database.prepare(`SELECT text FROM steps WHERE recipe_id = ?1 ORDER BY position`).bind(id),
     database.prepare(`SELECT tag FROM recipe_tags WHERE recipe_id = ?1`).bind(id),
@@ -114,6 +121,7 @@ export async function getRecipe(id: number): Promise<Recipe | null> {
       unit: i.unit,
       name: i.name,
       ...(i.is_heading === 1 && { heading: true as const }),
+      ...(i.is_raw !== null && { raw: i.is_raw === 1 }),
     })),
     steps: (steps.results as { text: string }[]).map((s) => s.text),
   };
@@ -139,10 +147,11 @@ function childStatements(database: D1Database, idSql: string, idParam: number | 
     database.prepare(`DELETE FROM ingredients WHERE recipe_id = ${idSql}`).bind(idParam),
     database
       .prepare(
-        `INSERT INTO ingredients (recipe_id, position, quantity, quantity_max, unit, name, is_heading)
+        // JSON true/false liefert json_extract als 1/0, fehlendes "raw" als NULL (= unbekannt)
+        `INSERT INTO ingredients (recipe_id, position, quantity, quantity_max, unit, name, is_heading, is_raw)
          SELECT ${idSql}, j.key, json_extract(j.value, '$.quantity'), json_extract(j.value, '$.quantityMax'),
                 json_extract(j.value, '$.unit'), json_extract(j.value, '$.name'),
-                coalesce(json_extract(j.value, '$.heading'), 0)
+                coalesce(json_extract(j.value, '$.heading'), 0), json_extract(j.value, '$.raw')
          FROM json_each(?2) j`,
       )
       .bind(idParam, ingredients),

@@ -100,3 +100,39 @@ export function recipeSuitability(
   if (yellow) return "pruefen";
   return substituted ? "mit_ersatz" : "passt";
 }
+
+export type ApprovedSubstitution = { ingredientKey: string; userId: number; replacement: string };
+
+// "ok" = betroffen, aber jede betroffene Person hat freigegebenen Ersatz
+export type IngredientMark = {
+  level: "red" | "yellow" | "ok";
+  people: { person: string; allergen: string; level: "red" | "yellow"; replacement: string | null }[];
+};
+
+/**
+ * Markierungen für die Rezeptseite, je Zutat (gleiche Reihenfolge). null = unbedenklich oder Überschrift.
+ * Zeigt alle Familienmitglieder, damit die Person, die kocht, weiß, für wen es ein Problem ist.
+ */
+export function markIngredients(
+  ingredients: { name: string; heading?: true; raw?: boolean }[],
+  rules: AllergenRule[],
+  approved: ApprovedSubstitution[],
+  names: Map<number, string>,
+): (IngredientMark | null)[] {
+  const ruleById = new Map(rules.map((r) => [r.id, r]));
+  return ingredients.map((ing) => {
+    if (ing.heading) return null;
+    const hits = checkIngredient(ing.name, ing.raw ?? null, rules);
+    if (hits.length === 0) return null;
+    const key = ingredientKey(ing.name);
+    const people = hits.map((hit) => ({
+      person: names.get(hit.userId) ?? "Unbekannt",
+      allergen: ruleById.get(hit.ruleId)?.name ?? "",
+      level: hit.level,
+      replacement: approved.find((s) => s.ingredientKey === key && s.userId === hit.userId)?.replacement ?? null,
+    }));
+    const open = people.filter((p) => p.replacement === null);
+    const level = open.length === 0 ? "ok" : open.some((p) => p.level === "red") ? "red" : "yellow";
+    return { level, people };
+  });
+}

@@ -26,6 +26,7 @@ export type RecipeFormValues = {
   tags: string[];
   devices: { device: Device; status: DeviceStatus; hint: string | null }[];
   ingredients: string[]; // je Zeile z. B. "200 g Mehl"
+  ingredientsRaw?: (boolean | null)[]; // je Zeile: true = roh, false = gegart, null = unbekannt
   steps: string[];
   photoKey: string | null;
 };
@@ -92,6 +93,8 @@ export function RecipeForm({ values, initialPhoto, requireSource = false }: Reci
   const [clientError, setClientError] = useState<{ ingredients?: string; steps?: string }>({});
 
   const ingredients = useRows(values.ingredients, values.id === null ? 3 : 1);
+  // roh/gegart je Zutatenzeile, über die Zeilen-ID (Start-IDs = Position). Neue Zeilen: unbekannt.
+  const [rawById, setRawById] = useState<Record<number, boolean | null>>(() => ({ ...(values.ingredientsRaw ?? []) }));
   const steps = useRows(values.steps, values.id === null ? 2 : 1);
   const [activeDevices, setActiveDevices] = useState<Device[]>(values.devices.map((d) => d.device));
   const [photo, setPhoto] = useState<PhotoState>(() => ({
@@ -305,7 +308,8 @@ export function RecipeForm({ values, initialPhoto, requireSource = false }: Reci
           <h2 id="zutaten-titel" className="text-xl font-semibold tracking-tight">Zutaten</h2>
           <p className="text-sm text-muted-foreground">
             Eine Zutat pro Zeile, z. B. „200 g Mehl“ oder „1 Prise Salz“. Enter legt eine neue Zeile an. Gruppen
-            wie „Für die Soße:“ mit Doppelpunkt am Ende werden zur Zwischenüberschrift.
+            wie „Für die Soße:“ mit Doppelpunkt am Ende werden zur Zwischenüberschrift. Der Knopf „?“ merkt
+            sich, ob die Zutat roh oder gegart verwendet wird (wichtig für Allergien).
           </p>
         </div>
         <ol className="space-y-2">
@@ -342,6 +346,15 @@ export function RecipeForm({ values, initialPhoto, requireSource = false }: Reci
                   ingredients.insert(row.id, lines.slice(1));
                 }}
               />
+              {!parseIngredientLine(row.text).heading && (
+                <RawToggle
+                  value={rawById[row.id] ?? null}
+                  label={`Zutat ${index + 1}`}
+                  onChange={(raw) => setRawById((m) => ({ ...m, [row.id]: raw }))}
+                />
+              )}
+              {/* Je Zeile genau ein Wert, damit er zur Zutat gleicher Position passt */}
+              <input type="hidden" name="ingredient_raw" value={rawById[row.id] === true ? "1" : rawById[row.id] === false ? "0" : ""} />
               <RowButtons
                 label={`Zutat ${index + 1}`}
                 isFirst={index === 0}
@@ -485,6 +498,35 @@ type RowButtonsProps = {
   onDown: () => void;
   onRemove: () => void;
 };
+
+// Wechselt bei jedem Tippen: unbekannt → roh → gegart → unbekannt
+const RAW_STATES = [
+  { value: null, short: "?", long: "roh oder gegart unbekannt" },
+  { value: true, short: "roh", long: "wird roh verwendet" },
+  { value: false, short: "gegart", long: "wird gegart" },
+] as const;
+
+function RawToggle({ value, label, onChange }: { value: boolean | null; label: string; onChange: (raw: boolean | null) => void }) {
+  const index = RAW_STATES.findIndex((s) => s.value === value);
+  const current = RAW_STATES[index];
+  const next = RAW_STATES[(index + 1) % RAW_STATES.length];
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(next.value)}
+      aria-label={`${label}: ${current.long}. Tippen für „${next.short}“`}
+      title={current.long}
+      className={cn(
+        "h-11 w-14 shrink-0 rounded-xl border text-xs font-semibold transition-colors duration-150 ease-out outline-none focus-visible:ring-3 focus-visible:ring-ring/50 active:scale-[0.97]",
+        value === null && "border-dashed border-input text-muted-foreground hover:border-primary/50 hover:text-foreground",
+        value === true && "border-primary/40 bg-primary/10 text-primary hover:bg-primary/15",
+        value === false && "border-border bg-secondary text-secondary-foreground hover:bg-secondary/80",
+      )}
+    >
+      {current.short}
+    </button>
+  );
+}
 
 function RowButtons({ label, isFirst, isLast, vertical, onUp, onDown, onRemove }: RowButtonsProps) {
   return (

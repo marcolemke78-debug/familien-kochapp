@@ -114,4 +114,21 @@ describe("parseRecipeForm", () => {
     expect(onlyHeadings.success).toBe(false);
     if (!onlyHeadings.success) expect(onlyHeadings.fieldErrors.ingredients).toBeDefined();
   });
+
+  it("übernimmt roh/gegart je Zutat und lässt leere Zeilen samt Angabe weg", () => {
+    const result = parseRecipeForm(
+      form({
+        ingredient: ["200 g Testgemüse", "", "1 EL Öl", "Für die Soße:", "2 Testbeeren"],
+        ingredient_raw: ["1", "0", "0", "1", ""],
+      }),
+    );
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.data.ingredients.map((i) => i.raw)).toEqual([true, false, undefined, undefined]);
+  });
+
+  it("verträgt fehlende roh-Angaben (z. B. alte Formulare)", () => {
+    const result = parseRecipeForm(form({}));
+    expect(result.success && result.data.ingredients.every((i) => i.raw === undefined)).toBe(true);
+  });
 });

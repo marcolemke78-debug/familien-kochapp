@@ -40,6 +40,7 @@ export default async function EditRecipePage({ params }: PageProps<"/rezepte/[id
           tags: recipe.tags,
           devices: recipe.devices,
           ingredients: recipe.ingredients.map(formatIngredient),
+          ingredientsRaw: recipe.ingredients.map((i) => i.raw ?? null),
           steps: recipe.steps,
           photoKey: recipe.photoKey,
         }}

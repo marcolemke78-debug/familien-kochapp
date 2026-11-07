@@ -19,7 +19,9 @@ Die konkreten Allergene stehen **nur in D1**, eingegeben über die App. Sie steh
 ## Entscheidungen (07.11.2026)
 
 - Person = Login (`users`). Wer ein Allergie-Profil hat, braucht einen eigenen Cloudflare-Access-Login und gibt Ersatz selbst frei. Keine Profile ohne Login.
-- `ingredients.is_raw`: Häkchen „roh“ im Rezeptformular, Standard `NULL` = unbekannt → bei `nur_roh`-Allergenen gelb. Keine KI-Schätzung.
+- `ingredients.is_raw`: Knopf je Zutatenzeile mit drei Zuständen „?“ → „roh“ → „gegart“ (ein Häkchen kennt kein „gegart“). Standard `NULL` = unbekannt → bei `nur_roh`-Allergenen gelb. Keine KI-Schätzung.
+- Ersatz hängt an Rezept + `ingredient_key` (nicht an `ingredients.id`, die beim Speichern neu vergeben wird).
+- Rezeptseite zeigt die Treffer der ganzen Familie mit Namen; zusätzliches Badge „prüfen“ für nur gelbe Treffer.
 
 ## Out of Scope
 
@@ -36,12 +38,12 @@ Die konkreten Allergene stehen **nur in D1**, eingegeben über die App. Sie steh
 
 ## Akzeptanzkriterien
 
-- [ ] Migration: `allergen_rules` (Name, Synonyme, Modus, Person), `ingredients.is_raw`, `substitutions` (Zutat → Ersatz, Status `vorschlag` | `freigegeben`, freigegeben_von)
-- [ ] Einstellungsseite: Allergen-Profil pflegen (nur angemeldete Familie)
-- [ ] Rezeptseite: betroffene Zutaten rot (sicher betroffen) oder gelb (prüfen), daneben freigegebener Ersatz
+- [x] Migration: `allergen_rules` (Name, Synonyme, Modus, Person), `ingredients.is_raw`, `substitutions` (Zutat → Ersatz, Status `vorschlag` | `freigegeben`, freigegeben_von)
+- [x] Einstellungsseite: Allergen-Profil pflegen (nur angemeldete Familie)
+- [x] Rezeptseite: betroffene Zutaten rot (sicher betroffen) oder gelb (prüfen), daneben freigegebener Ersatz
 - [ ] Rezeptliste: Badge „passt“ / „mit Ersatz“ / „nicht geeignet“, optional als Filter
 - [ ] Knopf „Diese Zutaten besser nicht“: Zutaten antippen → KI-Ersatzvorschläge → Freigabe durch die Person
-- [ ] Abgleich `src/lib/allergens.ts` per TDD (Synonyme, Modus `nur_roh`, Groß-/Kleinschreibung, Plural)
+- [x] Abgleich `src/lib/allergens.ts` per TDD (Synonyme, Modus `nur_roh`, Groß-/Kleinschreibung, Plural)
 
 ## Tasks
 
