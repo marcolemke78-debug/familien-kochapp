@@ -23,7 +23,7 @@ const PLURAL_SUFFIXES = ["", "e", "n", "en", "s", "er", "se", "nen"];
 const MIN_PREFIX_LENGTH = 4;
 
 /** Kleinbuchstaben, Umlaute vereinfacht, in Wörter zerlegt */
-function tokenize(text: string): string[] {
+export function tokenize(text: string): string[] {
   return text
     .toLowerCase()
     .replace(/ä/g, "a")
@@ -38,7 +38,7 @@ function tokenize(text: string): string[] {
 const MIN_STEM_LENGTH = 3;
 
 /** Begriff plus mögliche Einzahl-Formen, falls im Profil die Mehrzahl steht */
-function termForms(term: string): string[] {
+export function termForms(term: string): string[] {
   const stems = PLURAL_SUFFIXES.filter((suffix) => suffix && term.endsWith(suffix) && term.length - suffix.length >= MIN_STEM_LENGTH).map(
     (suffix) => term.slice(0, -suffix.length),
   );

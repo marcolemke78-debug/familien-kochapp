@@ -1,15 +1,25 @@
 # 07 — Nährwerte pro Portion
 
-**Status:** ⏳ Geplant
+**Status:** 🚧 In Arbeit
 
 ## Ziel
 
-Als Familienmitglied möchte ich pro Portion Kalorien, Eiweiß, Fett und Kohlenhydrate sehen, damit wir Low-Carb-Rezepte und zuckerarme Kuchen gezielt auswählen können.
+Als Familienmitglied möchte ich pro Portion Kalorien, Eiweiß, Fett, Kohlenhydrate und davon Zucker sehen, damit wir Low-Carb-Rezepte und zuckerarme Kuchen gezielt auswählen können.
 
 ## Abhängigkeiten
 
 - Spec 02: Zutaten mit Menge und Einheit
 - Lizenz BLS 4.0: CC BY 4.0, geprüft 07.11.2026 → ADR-004 in `guidelines.md` (Namensnennung Max Rubner-Institut Pflicht, Rohdaten nur in D1)
+
+## Design (mit Marco, 07.11.2026)
+
+- **Daten:** Tabelle `bls_foods` (Code, Name, kcal, Eiweiß, Fett, Kohlenhydrate, Zucker je 100 g). Importskript `scripts/import-bls.mjs` liest die entpackte XLSX und schreibt eine SQL-Datei (gitignored), die per `wrangler d1 execute` lokal und remote eingespielt wird.
+- **Zuordnung je Zutatenname, für die ganze Familie:** Tabelle `ingredient_nutrition` über `ingredient_key` (wie Spec 06). Einmal „Haferflocken“ zugeordnet → gilt in allen Rezepten. Felder: `bls_code` (oder „nicht mitrechnen“ für Wasser, Salz nach Geschmack …) und Gramm je Einheit als JSON (`{"": 60, "EL": 10, "ml": 0.92}`; `""` = Stück ohne Einheit, `ml` gilt auch für cl/dl/l).
+- **Vorschlag per Claude:** Knopf „Nährwerte berechnen“ auf der Rezeptseite. Die App sucht lokal je Zutat bis zu 20 BLS-Kandidaten (Wortteile, Plural). Claude bekommt nur die Zutatenzeilen und diese Kandidaten, wählt je Zutat einen Code (oder keinen bzw. „nicht mitrechnen“) und schätzt Gramm je Einheit. Codes außerhalb der Kandidaten werden verworfen. Effort `low`.
+- **Bestätigen:** Fenster wie beim Ersatz: je Zutat Vorschlag, Gramm je Einheit änderbar, anderer BLS-Eintrag per Suchfeld, „nicht mitrechnen“. „Übernehmen“ speichert. Erst gespeicherte Zuordnungen zählen.
+- **Rechnen:** immer frisch aus Zutaten + Zuordnungen (kein gespeichertes Ergebnis, das veralten kann). g/mg/kg fest, ml/cl/dl/l über Gramm je ml, sonst Gramm je Einheit. Spanne „2–3“ = Mittelwert. Pro Portion = Summe / Portionen des Rezepts.
+- **Anzeige:** Karte „Nährwerte pro Portion“ (kcal groß, darunter Eiweiß, Fett, Kohlenhydrate, davon Zucker), Hinweis „unvollständig: n Zutaten fehlen“, Quelle „Max Rubner-Institut, BLS 4.0“.
+- **Filter „Low Carb“:** nur vollständig berechnete Rezepte mit höchstens 20 g Kohlenhydraten pro Portion.
 
 ## Out of Scope
 
@@ -35,7 +45,10 @@ Als Familienmitglied möchte ich pro Portion Kalorien, Eiweiß, Fett und Kohlenh
 ## Tasks
 
 - [x] Lizenz prüfen, ADR
-- [ ] Importskript, Zuordnungs-UI, Berechnung, Anzeige
+- [ ] Migration `0006_nutrition.sql` + Importskript, Daten lokal und remote
+- [ ] `src/lib/nutrition.ts` per TDD: Gramm je Zeile, Summe pro Portion, Kandidaten-Suchbegriffe
+- [ ] Store + Server Actions (vorschlagen, speichern, suchen), Claude-Aufruf
+- [ ] UI: Nährwert-Karte, Zuordnungs-Fenster, Low-Carb-Filter, Quellenangabe (auch README)
 
 ## Validation
 
