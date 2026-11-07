@@ -1,69 +1,95 @@
-import Image from "next/image";
+import Link from "next/link";
+import { CookingPot, Plus, SearchX } from "lucide-react";
+import { getCurrentUser } from "@/lib/auth";
+import { listRecipes } from "@/lib/recipes";
+import { hasFilters, parseFilters } from "@/lib/recipe-query";
+import { RecipeFilters } from "@/components/recipe-filters";
+import { NoAccess } from "@/components/no-access";
+import { RecipeCard } from "@/components/recipe-card";
+import { buttonVariants } from "@/components/ui/button";
 
-export default function Home() {
+export default async function HomePage({ searchParams }: PageProps<"/">) {
+  const user = await getCurrentUser();
+  if (!user) return <NoAccess />;
+
+  const filters = parseFilters(await searchParams);
+  const filtered = hasFilters(filters);
+  const recipes = await listRecipes(filters);
+  // Ganz leeres Kochbuch (nicht nur "kein Treffer") -> Willkommens-Leerzustand ohne Filter
+  const empty = !filtered && recipes.length === 0;
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <>
+      <section className="flex flex-wrap items-end justify-between gap-4 pt-8 pb-6 sm:pt-12">
+        <div>
+          <p className="text-sm font-medium text-muted-foreground">Hallo {user.displayName}</p>
+          <h1 className="mt-1 text-3xl font-semibold tracking-tight sm:text-4xl">Was kochen wir heute?</h1>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+        {!empty && (
+          <Link href="/rezepte/neu" className={buttonVariants({ className: "max-sm:hidden" })}>
+            <Plus aria-hidden />
+            Neues Rezept
+          </Link>
+        )}
+      </section>
+
+      {!empty && <RecipeFilters filters={filters} />}
+
+      {empty ? (
+        <EmptyState />
+      ) : recipes.length === 0 ? (
+        <NoResults />
+      ) : (
+        <ul className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
+          {recipes.map((recipe, index) => (
+            <li key={recipe.id}>
+              <RecipeCard recipe={recipe} priority={index < 3} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
+  );
+}
+
+function NoResults() {
+  return (
+    <section className="flex flex-col items-center gap-4 rounded-[1.25rem] border border-border bg-card px-6 py-14 text-center">
+      <span className="flex size-16 items-center justify-center rounded-full bg-muted text-muted-foreground">
+        <SearchX className="size-7" aria-hidden />
+      </span>
+      <div className="max-w-sm space-y-2">
+        <h2 className="text-xl font-semibold tracking-tight">Nichts gefunden</h2>
+        <p className="text-muted-foreground">Zu dieser Auswahl gibt es noch kein Rezept. Probiert weniger Filter.</p>
+      </div>
+      <Link href="/" className={buttonVariants({ variant: "outline" })}>
+        Filter zurücksetzen
+      </Link>
+    </section>
+  );
+}
+
+function EmptyState() {
+  return (
+    <section className="relative flex flex-col items-center gap-5 overflow-hidden rounded-[1.25rem] border border-border bg-card px-6 py-14 text-center sm:py-20">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-24 left-1/2 size-72 -translate-x-1/2 rounded-full bg-brand/10 blur-3xl"
+      />
+      <span className="relative flex size-20 items-center justify-center rounded-full bg-linear-to-br from-brand to-brand-deep text-primary-foreground shadow-float">
+        <CookingPot className="size-9" aria-hidden />
+      </span>
+      <div className="relative max-w-sm space-y-2">
+        <h2 className="text-xl font-semibold tracking-tight">Noch keine Rezepte</h2>
+        <p className="text-muted-foreground">
+          Legt euer erstes Lieblingsrezept an, mit Foto und dem Hinweis, ob es im Thermomix oder in der
+          Heißluftfritteuse klappt.
+        </p>
+      </div>
+      <Link href="/rezepte/neu" className={buttonVariants({ size: "lg", className: "relative" })}>
+        <Plus aria-hidden />
+        Erstes Rezept anlegen
+      </Link>
+    </section>
   );
 }

@@ -39,3 +39,17 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# webapp-saas-erstellen
+.env.local
+.mcp.json
+.claude/settings.local.json
+/DESIGN.md
+
+# Cloudflare
+.open-next
+.wrangler
+.dev.vars
+
+# Interne Übergabe
+HANDOFF.md

@@ -1,0 +1,34 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "familien-kochapp",
+	"main": ".open-next/worker.js",
+	"compatibility_date": "2026-10-30",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"assets": {
+		"directory": ".open-next/assets",
+		"binding": "ASSETS"
+	},
+	// Keine Geheimnisse: Team-Domain und AUD-Tag der Access-App
+	"vars": {
+		"CF_ACCESS_TEAM_DOMAIN": "frosty-butterfly-be9b.cloudflareaccess.com",
+		"CF_ACCESS_AUD": "2c1d7b995872c4a99a11c7ca706d0daef068f460f75071f87089c28c47325bff"
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "familien-kochapp",
+			"database_id": "eb16dba2-8a1a-48a3-b091-e37d0e040a37",
+			"migrations_dir": "migrations"
+		}
+	],
+	// Rezeptfotos, nur in der EU gespeichert
+	"r2_buckets": [
+		{
+			"binding": "PHOTOS",
+			"bucket_name": "familien-kochapp-fotos",
+			"jurisdiction": "eu"
+		}
+	]
+}
