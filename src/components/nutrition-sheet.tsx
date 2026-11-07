@@ -1,12 +1,13 @@
 "use client";
 // Spec 07: Zutaten den BLS-Einträgen zuordnen. Claude schlägt vor, die Person prüft und übernimmt.
 // Die Zuordnung gilt je Zutatenname für die ganze Familie.
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { Calculator, Check, Search, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { prepareNutrition, saveNutrition, searchBlsAction, type NutritionRow } from "@/app/rezepte/nutrition-actions";
+import { MAX_GRAMS_PER_UNIT } from "@/lib/nutrition-match";
 import { cn } from "@/lib/utils";
 
 const SKIP = "__skip";
@@ -18,11 +19,14 @@ export function NutritionSheet({ recipeId, label }: { recipeId: number; label: s
   const [aiError, setAiError] = useState<string | null>(null);
   const [loading, startLoad] = useTransition();
   const [saving, startSave] = useTransition();
+  const loadId = useRef(0); // verwirft Antworten, die erst nach dem Schließen ankommen
 
   function load() {
     setError(null);
+    const id = ++loadId.current;
     startLoad(async () => {
       const result = await prepareNutrition(recipeId);
+      if (id !== loadId.current) return;
       if (result.ok) {
         setRows(result.rows);
         setAiError(result.aiError);
@@ -33,7 +37,11 @@ export function NutritionSheet({ recipeId, label }: { recipeId: number; label: s
   function onOpenChange(next: boolean) {
     setOpen(next);
     if (next) load();
-    else setRows(null);
+    else {
+      loadId.current++;
+      setRows(null);
+      setAiError(null);
+    }
   }
 
   function update(key: string, change: Partial<NutritionRow>) {
@@ -55,7 +63,7 @@ export function NutritionSheet({ recipeId, label }: { recipeId: number; label: s
     startSave(async () => {
       const result = await saveNutrition(recipeId, entries);
       if (result.message) setError(result.message);
-      else setOpen(false);
+      else onOpenChange(false);
     });
   }
 
@@ -91,8 +99,8 @@ export function NutritionSheet({ recipeId, label }: { recipeId: number; label: s
 
           {rows && (
             <ul className="space-y-3">
-              {rows.map((row) => (
-                <RowEditor key={row.key} row={row} onChange={(change) => update(row.key, change)} />
+              {rows.map((row, index) => (
+                <RowEditor key={row.key} id={`naehrwert-${index}`} row={row} onChange={(change) => update(row.key, change)} />
               ))}
             </ul>
           )}
@@ -117,12 +125,12 @@ export function NutritionSheet({ recipeId, label }: { recipeId: number; label: s
   );
 }
 
-function RowEditor({ row, onChange }: { row: NutritionRow; onChange: (change: Partial<NutritionRow>) => void }) {
+function RowEditor({ id, row, onChange }: { id: string; row: NutritionRow; onChange: (change: Partial<NutritionRow>) => void }) {
   const [searching, setSearching] = useState(false);
   const [query, setQuery] = useState("");
   const [pending, startSearch] = useTransition();
   const [noHits, setNoHits] = useState(false);
-  const selectId = `bls-${row.key}`;
+  const selectId = id;
   const done = row.skip || (!!row.code && row.units.every((u) => row.grams[u] > 0));
 
   function search() {
@@ -175,19 +183,18 @@ function RowEditor({ row, onChange }: { row: NutritionRow; onChange: (change: Pa
       {!row.skip &&
         row.units.map((u) => (
           <div key={u} className="flex items-center gap-2">
-            <label htmlFor={`${selectId}-${u}`} className="text-sm text-muted-foreground">
+            <label htmlFor={`${selectId}-${u || "stueck"}`} className="text-sm text-muted-foreground">
               1 {row.unitLabels[u]} =
             </label>
-            <Input
-              id={`${selectId}-${u}`}
-              type="number"
-              inputMode="decimal"
-              min={0}
-              step="any"
-              value={row.grams[u] || ""}
-              onChange={(e) => onChange({ grams: { ...row.grams, [u]: Number(e.target.value) } })}
-              aria-invalid={!(row.grams[u] > 0)}
-              className="h-11 w-24"
+            <GramsInput
+              id={`${selectId}-${u || "stueck"}`}
+              value={row.grams[u]}
+              onChange={(g) => {
+                const grams = { ...row.grams };
+                if (g === null) delete grams[u];
+                else grams[u] = g;
+                onChange({ grams });
+              }}
             />
             <span className="text-sm text-muted-foreground">g</span>
           </div>
@@ -223,5 +230,27 @@ function RowEditor({ row, onChange }: { row: NutritionRow; onChange: (change: Pa
       )}
       {noHits && <p className="text-sm text-muted-foreground">Nichts gefunden. Versuch einen allgemeineren Begriff.</p>}
     </li>
+  );
+}
+
+// Eigener Textzustand, damit "0,92" oder "0.5" Zeichen für Zeichen tippbar ist (Komma oder Punkt)
+function GramsInput({ id, value, onChange }: { id: string; value: number | undefined; onChange: (grams: number | null) => void }) {
+  const [text, setText] = useState(value ? String(value).replace(".", ",") : "");
+  const parsed = Number(text.replace(",", "."));
+  const valid = text.trim() !== "" && parsed > 0 && parsed <= MAX_GRAMS_PER_UNIT;
+  return (
+    <Input
+      id={id}
+      type="text"
+      inputMode="decimal"
+      value={text}
+      onChange={(e) => {
+        setText(e.target.value);
+        const n = Number(e.target.value.replace(",", "."));
+        onChange(e.target.value.trim() !== "" && n > 0 && n <= MAX_GRAMS_PER_UNIT ? n : null);
+      }}
+      aria-invalid={!valid}
+      className="h-11 w-24"
+    />
   );
 }

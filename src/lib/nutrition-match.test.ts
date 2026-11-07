@@ -4,14 +4,14 @@ import { matchUserText, validMatches, type MatchItem } from "./nutrition-match";
 // Nur erfundene Lebensmittel
 const items: MatchItem[] = [
   { index: 0, line: "200 g Zorbel", unit: null, candidates: [{ code: "Z1", name: "Zorbel, roh" }] },
-  { index: 1, line: "2 EL Quimbe", unit: "el", candidates: [{ code: "Q1", name: "Quimbe" }] },
-  { index: 2, line: "3 Plimm", unit: "", candidates: [] },
+  { index: 1, line: "2 EL Quimbe", unit: "EL", candidates: [{ code: "Q1", name: "Quimbe" }] },
+  { index: 2, line: "3 Plimm", unit: "Stück", candidates: [] },
 ];
 
 describe("matchUserText", () => {
   it("listet Zutat, gefragte Einheit und Kandidaten", () => {
     const text = matchUserText(items);
-    expect(text).toContain("Zutat 1: 2 EL Quimbe\nGramm je: el\nKandidaten:\n- Q1: Quimbe");
+    expect(text).toContain("Zutat 1: 2 EL Quimbe\nGramm je: EL\nKandidaten:\n- Q1: Quimbe");
     expect(text).toContain("Gramm je: Stück");
     expect(text).toContain("- (keine)");
     expect(text).not.toMatch(/Zutat 0[^\n]*\nGramm je/);

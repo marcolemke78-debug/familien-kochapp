@@ -54,9 +54,10 @@ sheet.eachRow((row, n) => {
 });
 
 // In Blöcken einfügen, damit einzelne SQL-Anweisungen nicht zu groß werden
-const lines = ["DELETE FROM bls_foods;"];
+// Upsert statt DELETE: ingredient_nutrition verweist per Fremdschlüssel auf bls_foods
+const lines = [];
 for (let i = 0; i < rows.length; i += 200) {
-  lines.push(`INSERT INTO bls_foods (code, name, search, kcal, protein, fat, carbs, sugar) VALUES\n${rows.slice(i, i + 200).join(",\n")};`);
+  lines.push(`INSERT INTO bls_foods (code, name, search, kcal, protein, fat, carbs, sugar) VALUES\n${rows.slice(i, i + 200).join(",\n")}\nON CONFLICT (code) DO UPDATE SET name = excluded.name, search = excluded.search, kcal = excluded.kcal, protein = excluded.protein, fat = excluded.fat, carbs = excluded.carbs, sugar = excluded.sugar;`);
 }
 mkdirSync(".wrangler", { recursive: true });
 writeFileSync(OUT, lines.join("\n") + "\n");

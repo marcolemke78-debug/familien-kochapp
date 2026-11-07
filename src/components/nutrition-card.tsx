@@ -36,7 +36,7 @@ export function NutritionCard({ recipeId, result }: { recipeId: number; result: 
         {lowCarb && <span className="rounded-full bg-emerald-600/10 px-3 py-1 text-sm font-medium text-emerald-700 dark:text-emerald-400">Low Carb</span>}
       </div>
       <p className="text-4xl font-semibold tracking-tight tabular-nums">
-        {result.complete ? "" : "ca. "}
+        {result.complete ? "" : "mind. "}
         {fmt(v.kcal)} <span className="text-lg font-medium text-muted-foreground">kcal</span>
       </p>
       <dl className="divide-y divide-border">

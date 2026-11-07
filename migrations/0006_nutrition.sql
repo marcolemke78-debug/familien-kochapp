@@ -14,7 +14,8 @@ CREATE TABLE bls_foods (
 
 -- Zuordnung Zutatenname → BLS-Eintrag, für die ganze Familie (ingredient_key aus src/lib/allergens.ts).
 -- bls_code NULL + skip = 1: Zutat zählt nicht mit (Wasser, Salz nach Geschmack).
--- grams: JSON, Gramm je Einheit, z. B. {"": 60, "EL": 10, "ml": 0.92}. "" = Stück ohne Einheit, "ml" gilt auch für cl/dl/l.
+-- grams: JSON, Gramm je Einheit, Schlüssel aus unitKey() in src/lib/nutrition.ts, z. B. {"": 60, "el": 10, "ml": 0.92}.
+-- "" = Stück, "ml" gilt auch für cl/dl/l.
 CREATE TABLE ingredient_nutrition (
   ingredient_key TEXT PRIMARY KEY,
   bls_code TEXT REFERENCES bls_foods(code),

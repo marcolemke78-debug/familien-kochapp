@@ -98,7 +98,7 @@ async function suggestFor(open: NutritionRow[], groups: Map<string, Ingredient[]
     rows.map((r) => ({
       index: open.indexOf(r),
       line: r.line,
-      unit: r.units.find((u) => !((r.grams[u] ?? 0) > 0)) ?? null,
+      unit: missingUnit(r),
       candidates: r.options,
     }));
   const first = await matchWithClaude(ask(open));
@@ -120,15 +120,23 @@ async function suggestFor(open: NutritionRow[], groups: Map<string, Ingredient[]
   return null;
 }
 
+// Einheit, für die noch Gramm fehlen, so wie sie im Rezept steht ("EL", "Stück", "ml"). Pro Runde eine.
+function missingUnit(row: NutritionRow): string | null {
+  const key = row.units.find((u) => !((row.grams[u] ?? 0) > 0));
+  return key === undefined ? null : row.unitLabels[key];
+}
+
 function apply(open: NutritionRow[], matches: Match[]) {
   for (const m of matches) {
     const row = open[m.index];
     if (!row) continue;
-    if (m.skip) {
+    // Schon zugeordnet (fehlt nur Gramm für eine neue Einheit): Zuordnung nicht anfassen, sie gilt für alle Rezepte
+    const hasChoice = !!row.code || row.skip;
+    if (!hasChoice && m.skip) {
       row.skip = true;
       row.code = null;
       row.suggested = true;
-    } else if (m.code) {
+    } else if (!hasChoice && m.code) {
       row.code = m.code;
       row.suggested = true;
       // gewählten Eintrag nach vorn
@@ -172,7 +180,9 @@ export async function saveNutrition(recipeId: number, input: unknown): Promise<{
   const user = await getCurrentUser();
   if (!user) return { message: NOT_LOGGED_IN };
   const parsed = saveSchema.safeParse(input);
-  if (!recipeIdSchema.safeParse(recipeId).success || !parsed.success) return { message: "Bitte prüfe die Grammangaben (größer als 0)." };
+  if (!recipeIdSchema.safeParse(recipeId).success || !parsed.success) {
+    return { message: `Bitte prüfe die Grammangaben (mehr als 0, höchstens ${MAX_GRAMS_PER_UNIT} g).` };
+  }
 
   try {
     const [recipe, mappings] = await Promise.all([getRecipe(recipeId), listMappings()]);

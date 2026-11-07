@@ -7,7 +7,7 @@ export const MAX_GRAMS_PER_UNIT = 5000;
 export type MatchItem = {
   index: number;
   line: string; // Zutat mit Menge, wie im Rezept
-  unit: string | null; // Einheit, für die Gramm gebraucht werden ("" = Stück, "ml" = Gramm je ml), null = keine
+  unit: string | null; // Einheit wie im Rezept ("EL", "Stück", "ml" = Gramm je ml), null = keine Gramm nötig
   candidates: { code: string; name: string }[];
 };
 
@@ -39,7 +39,7 @@ export function matchUserText(items: MatchItem[]): string {
     .map((item) =>
       [
         `Zutat ${item.index}: ${item.line}`,
-        item.unit === null ? null : `Gramm je: ${item.unit === "" ? "Stück" : item.unit}`,
+        item.unit === null ? null : `Gramm je: ${item.unit}`,
         "Kandidaten:",
         ...(item.candidates.length ? item.candidates.map((c) => `- ${c.code}: ${c.name}`) : ["- (keine)"]),
       ]
