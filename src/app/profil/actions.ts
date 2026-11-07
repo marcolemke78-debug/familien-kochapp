@@ -5,6 +5,8 @@ import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
 import { parseAllergenForm, type AllergenFieldErrors } from "@/lib/allergen-input";
 import { addRule, deleteRule } from "@/lib/allergen-store";
+import { cleanSynonyms, synonymNameSchema } from "@/lib/synonyms";
+import { synonymsWithClaude } from "@/lib/synonyms-claude";
 
 // values: Eingaben zurück ins Formular, weil React es nach dem Absenden leert
 export type AllergenFormState = {
@@ -44,4 +46,17 @@ export async function deleteAllergenRule(ruleId: number): Promise<{ message?: st
   }
   revalidatePath("/", "layout");
   return {};
+}
+
+// Speichert nichts: Die Person wählt aus den Vorschlägen selbst aus
+export async function suggestSynonyms(name: string, existing: string[]): Promise<{ ok: true; synonyms: string[] } | { ok: false; error: string }> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: NOT_LOGGED_IN };
+  const parsedName = synonymNameSchema.safeParse(name);
+  if (!parsedName.success) return { ok: false, error: "Bitte trage zuerst ein, was du nicht verträgst." };
+  const parsedExisting = z.array(z.string().max(200)).max(50).safeParse(existing);
+
+  const result = await synonymsWithClaude(parsedName.data);
+  if (!result.ok) return result;
+  return { ok: true, synonyms: cleanSynonyms(result.synonyms, parsedName.data, parsedExisting.success ? parsedExisting.data : []) };
 }
