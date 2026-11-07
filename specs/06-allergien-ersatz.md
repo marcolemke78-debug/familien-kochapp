@@ -41,7 +41,7 @@ Die konkreten Allergene stehen **nur in D1**, eingegeben über die App. Sie steh
 - [x] Migration: `allergen_rules` (Name, Synonyme, Modus, Person), `ingredients.is_raw`, `substitutions` (Zutat → Ersatz, Status `vorschlag` | `freigegeben`, freigegeben_von)
 - [x] Einstellungsseite: Allergen-Profil pflegen (nur angemeldete Familie)
 - [x] Rezeptseite: betroffene Zutaten rot (sicher betroffen) oder gelb (prüfen), daneben freigegebener Ersatz
-- [ ] Rezeptliste: Badge „passt“ / „mit Ersatz“ / „nicht geeignet“, optional als Filter
+- [x] Rezeptliste: Badge „passt“ / „mit Ersatz“ / „prüfen“ / „nicht geeignet“ für die ganze Familie (Filter vorerst weggelassen, YAGNI)
 - [ ] Knopf „Diese Zutaten besser nicht“: Zutaten antippen → KI-Ersatzvorschläge → Freigabe durch die Person
 - [x] Abgleich `src/lib/allergens.ts` per TDD (Synonyme, Modus `nur_roh`, Groß-/Kleinschreibung, Plural)
 

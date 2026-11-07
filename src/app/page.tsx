@@ -6,6 +6,8 @@ import { hasFilters, parseFilters } from "@/lib/recipe-query";
 import { RecipeFilters } from "@/components/recipe-filters";
 import { NoAccess } from "@/components/no-access";
 import { RecipeCard } from "@/components/recipe-card";
+import { familySuitability, type Suitability } from "@/lib/allergens";
+import { listAllergenData, listRules } from "@/lib/allergen-store";
 import { buttonVariants } from "@/components/ui/button";
 
 export default async function HomePage({ searchParams }: PageProps<"/">) {
@@ -14,7 +16,13 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
 
   const filters = parseFilters(await searchParams);
   const filtered = hasFilters(filters);
-  const recipes = await listRecipes(filters);
+  const [recipes, rules] = await Promise.all([listRecipes(filters), listRules()]);
+  // Spec 06: Badge nur, wenn jemand in der Familie Allergien eingetragen hat
+  const suitability = new Map<number, Suitability>();
+  if (rules.length > 0) {
+    const data = await listAllergenData();
+    for (const r of recipes) suitability.set(r.id, familySuitability(data.ingredients.get(r.id) ?? [], rules, data.approved.get(r.id) ?? []));
+  }
   // Ganz leeres Kochbuch (nicht nur "kein Treffer") -> Willkommens-Leerzustand ohne Filter
   const empty = !filtered && recipes.length === 0;
 
@@ -43,7 +51,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
         <ul className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
           {recipes.map((recipe, index) => (
             <li key={recipe.id}>
-              <RecipeCard recipe={recipe} priority={index < 3} />
+              <RecipeCard recipe={recipe} priority={index < 3} suitability={suitability.get(recipe.id)} />
             </li>
           ))}
         </ul>

@@ -136,3 +136,21 @@ export function markIngredients(
     return { level, people };
   });
 }
+
+// Reihenfolge von gut nach schlecht
+const SUITABILITY_ORDER: Suitability[] = ["passt", "mit_ersatz", "pruefen", "nicht_geeignet"];
+
+/** Badge für die ganze Familie: je Person prüfen, der schlechteste Wert gewinnt */
+export function familySuitability(
+  ingredients: { name: string; isRaw: boolean | null }[],
+  rules: AllergenRule[],
+  approved: ApprovedSubstitution[],
+): Suitability {
+  let worst = 0;
+  for (const userId of new Set(rules.map((r) => r.userId))) {
+    const keys = new Set(approved.filter((s) => s.userId === userId).map((s) => s.ingredientKey));
+    const result = recipeSuitability(ingredients, rules.filter((r) => r.userId === userId), keys);
+    worst = Math.max(worst, SUITABILITY_ORDER.indexOf(result));
+  }
+  return SUITABILITY_ORDER[worst];
+}

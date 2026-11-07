@@ -56,3 +56,28 @@ export async function listApprovedSubstitutions(recipeId: number): Promise<Appro
     .all<{ ingredient_key: string; user_id: number; replacement: string }>();
   return results.map((r) => ({ ingredientKey: r.ingredient_key, userId: r.user_id, replacement: r.replacement }));
 }
+
+/** Für die Badges der Rezeptliste: Zutaten (ohne Überschriften) und freigegebener Ersatz je Rezept */
+export async function listAllergenData(): Promise<{
+  ingredients: Map<number, { name: string; isRaw: boolean | null }[]>;
+  approved: Map<number, ApprovedSubstitution[]>;
+}> {
+  const database = await db();
+  const [ings, subs] = await database.batch([
+    database.prepare(`SELECT recipe_id, name, is_raw FROM ingredients WHERE is_heading = 0`),
+    database.prepare(`SELECT recipe_id, ingredient_key, user_id, replacement FROM substitutions WHERE status = 'freigegeben'`),
+  ]);
+  const ingredients = new Map<number, { name: string; isRaw: boolean | null }[]>();
+  for (const r of ings.results as { recipe_id: number; name: string; is_raw: number | null }[]) {
+    const list = ingredients.get(r.recipe_id) ?? [];
+    list.push({ name: r.name, isRaw: r.is_raw === null ? null : r.is_raw === 1 });
+    ingredients.set(r.recipe_id, list);
+  }
+  const approved = new Map<number, ApprovedSubstitution[]>();
+  for (const r of subs.results as { recipe_id: number; ingredient_key: string; user_id: number; replacement: string }[]) {
+    const list = approved.get(r.recipe_id) ?? [];
+    list.push({ ingredientKey: r.ingredient_key, userId: r.user_id, replacement: r.replacement });
+    approved.set(r.recipe_id, list);
+  }
+  return { ingredients, approved };
+}

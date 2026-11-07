@@ -1,11 +1,24 @@
 import Link from "next/link";
-import { Clock, Users } from "lucide-react";
+import { CircleCheck, Clock, OctagonAlert, Replace, TriangleAlert, Users } from "lucide-react";
 import { RecipePhoto } from "@/components/recipe-photo";
 import { DeviceBadge } from "@/components/device-badge";
 import type { RecipeSummary } from "@/lib/recipes";
+import type { Suitability } from "@/lib/allergens";
+import { cn } from "@/lib/utils";
+
+// Allergie-Badge für die ganze Familie (Spec 06)
+const SUITABILITY = {
+  passt: { label: "Passt für alle", Icon: CircleCheck, className: "bg-emerald-600/10 text-emerald-700 dark:text-emerald-400" },
+  mit_ersatz: { label: "Mit Ersatz", Icon: Replace, className: "bg-emerald-600/10 text-emerald-700 dark:text-emerald-400" },
+  pruefen: { label: "Bitte prüfen", Icon: TriangleAlert, className: "bg-amber-500/15 text-amber-700 dark:text-amber-400" },
+  nicht_geeignet: { label: "Nicht für alle", Icon: OctagonAlert, className: "bg-destructive/10 text-destructive" },
+} as const;
 
 // Karte in der Rezeptliste: großes Foto zuerst (Kompass: Appetit zuerst), darunter Titel und Eckdaten
-export function RecipeCard({ recipe, priority }: { recipe: RecipeSummary; priority?: boolean }) {
+type RecipeCardProps = { recipe: RecipeSummary; priority?: boolean; suitability?: Suitability };
+
+export function RecipeCard({ recipe, priority, suitability }: RecipeCardProps) {
+  const badge = suitability ? SUITABILITY[suitability] : null;
   return (
     <Link
       href={`/rezepte/${recipe.id}`}
@@ -41,6 +54,12 @@ export function RecipeCard({ recipe, priority }: { recipe: RecipeSummary; priori
             <Users className="size-4" aria-hidden />
             {recipe.servings} {recipe.servings === 1 ? "Portion" : "Portionen"}
           </span>
+          {badge && (
+            <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold", badge.className)}>
+              <badge.Icon className="size-3.5" aria-hidden />
+              {badge.label}
+            </span>
+          )}
         </p>
       </div>
     </Link>

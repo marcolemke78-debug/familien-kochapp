@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { checkIngredient, ingredientKey, markIngredients, recipeSuitability, type AllergenRule } from "./allergens";
+import { checkIngredient, familySuitability, ingredientKey, markIngredients, recipeSuitability, type AllergenRule } from "./allergens";
 
 // Nur erfundene Allergene – echte stehen ausschließlich in D1.
 const rule = (r: Partial<AllergenRule> = {}): AllergenRule => ({ id: 1, userId: 1, name: "Zorbel", synonyms: [], mode: "always", ...r });
@@ -120,5 +120,27 @@ describe("markIngredients", () => {
   it("Ersatz einer anderen Person zählt nicht", () => {
     const subs = [{ ingredientKey: "zorbel", userId: 2, replacement: "Testersatz" }];
     expect(markIngredients([{ name: "Zorbel" }], rules, subs, names)[0]?.level).toBe("red");
+  });
+});
+
+describe("familySuitability", () => {
+  // Person 1 verträgt kein Zorbel, Person 2 kein rohes Quimbe
+  const rules = [rule(), rule({ id: 2, userId: 2, name: "Quimbe", mode: "raw_only" })];
+  const ing = (name: string, isRaw: boolean | null = null) => ({ name, isRaw });
+
+  it("ohne Regeln passt alles", () => {
+    expect(familySuitability([ing("Zorbel")], [], [])).toBe("passt");
+  });
+
+  it("nimmt den schlechtesten Wert über alle Personen", () => {
+    expect(familySuitability([ing("Quimbe")], rules, [])).toBe("pruefen");
+    expect(familySuitability([ing("Quimbe"), ing("Zorbel")], rules, [])).toBe("nicht_geeignet");
+  });
+
+  it("Ersatz zählt nur für die Person, die ihn freigegeben hat", () => {
+    const forPerson1 = [{ ingredientKey: "zorbel", userId: 1, replacement: "Testersatz" }];
+    expect(familySuitability([ing("Zorbel")], rules, forPerson1)).toBe("mit_ersatz");
+    const forPerson2 = [{ ingredientKey: "zorbel", userId: 2, replacement: "Testersatz" }];
+    expect(familySuitability([ing("Zorbel")], rules, forPerson2)).toBe("nicht_geeignet");
   });
 });
