@@ -2,11 +2,12 @@
 // Formular zum Anlegen und Bearbeiten. Auf dem Handy bedienbar: große Felder, Zeilen per Knopf verschieben,
 // Enter legt eine neue Zutat an, mehrzeiliges Einfügen verteilt sich auf mehrere Zeilen.
 import { useActionState, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { ChevronDown, ChevronUp, ImagePlus, Plus, Trash2, X } from "lucide-react";
+import { ChevronDown, ChevronUp, Ellipsis, ImagePlus, Plus, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { DeviceBadge } from "@/components/device-badge";
 import { saveRecipe, type SaveState } from "@/app/rezepte/actions";
 import { checkOriginal, resizeImage } from "@/lib/resize-image";
@@ -530,7 +531,34 @@ function RawToggle({ value, label, onChange }: { value: boolean | null; label: s
 
 function RowButtons({ label, isFirst, isLast, vertical, onUp, onDown, onRemove }: RowButtonsProps) {
   return (
-    <div className={cn("flex shrink-0", vertical ? "flex-col" : "flex-row")}>
+    <>
+      {/* Handy: nur ein „⋯“-Knopf, damit das Zutatenfeld breit genug bleibt */}
+      {!vertical && (
+        <DropdownMenu>
+          <DropdownMenuTrigger render={<Button type="button" variant="ghost" size="icon" className="sm:hidden" aria-label={`${label}: mehr`} />}>
+            <Ellipsis />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-auto min-w-44">
+            <DropdownMenuItem disabled={isFirst} onClick={onUp} className="min-h-11 text-base">
+              <ChevronUp /> Nach oben
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled={isLast} onClick={onDown} className="min-h-11 text-base">
+              <ChevronDown /> Nach unten
+            </DropdownMenuItem>
+            <DropdownMenuItem variant="destructive" onClick={onRemove} className="min-h-11 text-base">
+              <Trash2 /> Löschen
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+      <RowButtonsInline label={label} isFirst={isFirst} isLast={isLast} vertical={vertical} onUp={onUp} onDown={onDown} onRemove={onRemove} />
+    </>
+  );
+}
+
+function RowButtonsInline({ label, isFirst, isLast, vertical, onUp, onDown, onRemove }: RowButtonsProps) {
+  return (
+    <div className={cn("shrink-0", vertical ? "flex flex-col" : "hidden flex-row sm:flex")}>
       <Button type="button" variant="ghost" size="icon" disabled={isFirst} onClick={onUp} aria-label={`${label} nach oben`}>
         <ChevronUp />
       </Button>
