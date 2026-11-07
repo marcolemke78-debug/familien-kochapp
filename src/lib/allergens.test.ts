@@ -15,6 +15,15 @@ describe("checkIngredient", () => {
     expect(checkIngredient("Quämbe", null, [rule({ name: "Quamb" })])).toHaveLength(1);
   });
 
+  it("erkennt die Einzahl, auch wenn im Profil die Mehrzahl steht", () => {
+    expect(checkIngredient("1 Zorbel", null, [rule({ name: "Zorbeln" })])).toHaveLength(1);
+    expect(checkIngredient("1 Quimbe", null, [rule({ name: "Quimben" })])).toHaveLength(1);
+    expect(checkIngredient("Zorbelsaft", null, [rule({ name: "Zorbeln" })])).toHaveLength(1);
+    // kurzer Wortstamm: keine Fehlalarme
+    expect(checkIngredient("Quen", null, [rule({ name: "Quenen" })])).toHaveLength(1);
+    expect(checkIngredient("Qu", null, [rule({ name: "Quen" })])).toEqual([]);
+  });
+
   it("erkennt zusammengesetzte Wörter mit dem Allergen am Ende oder (ab 4 Buchstaben) am Anfang", () => {
     expect(checkIngredient("Hasenzorbel", null, [rule()])).toHaveLength(1);
     expect(checkIngredient("Zorbelmus, fein", null, [rule()])).toHaveLength(1);

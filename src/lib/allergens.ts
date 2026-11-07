@@ -34,12 +34,25 @@ function tokenize(text: string): string[] {
     .filter(Boolean);
 }
 
+// Kürzester Wortstamm, wenn eine Plural-Endung abgeschnitten wird ("Zorbeln" → "zorbel")
+const MIN_STEM_LENGTH = 3;
+
+/** Begriff plus mögliche Einzahl-Formen, falls im Profil die Mehrzahl steht */
+function termForms(term: string): string[] {
+  const stems = PLURAL_SUFFIXES.filter((suffix) => suffix && term.endsWith(suffix) && term.length - suffix.length >= MIN_STEM_LENGTH).map(
+    (suffix) => term.slice(0, -suffix.length),
+  );
+  return [term, ...stems];
+}
+
 /** Passt ein einzelnes Wort zum Begriff (Plural, zusammengesetztes Wort)? */
 function wordMatches(word: string, term: string): boolean {
-  return PLURAL_SUFFIXES.some((suffix) => {
-    const form = term + suffix;
-    return word === form || word.endsWith(form) || (term.length >= MIN_PREFIX_LENGTH && word.startsWith(term));
-  });
+  return termForms(term).some((base) =>
+    PLURAL_SUFFIXES.some((suffix) => {
+      const form = base + suffix;
+      return word === form || word.endsWith(form) || (base.length >= MIN_PREFIX_LENGTH && word.startsWith(base));
+    }),
+  );
 }
 
 /** Kommt der Begriff (ein oder mehrere Wörter) im Zutatennamen vor? */
