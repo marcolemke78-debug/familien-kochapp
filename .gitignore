@@ -53,3 +53,6 @@ next-env.d.ts
 
 # Interne Übergabe
 HANDOFF.md
+
+# Datenbank-Sicherungen (echte Familiendaten, nie ins Repo)
+/backups/

@@ -32,6 +32,14 @@ Siehe `AGENTS.md`: Vor dem Coden die Doku in `node_modules/next/dist/docs/` beac
 ## Datenschutz
 - Das Repo ist öffentlich: Rezepte, Fotos und Allergie-Angaben liegen nur in Cloudflare D1 und R2, nie im Code, in Specs oder Testdaten. Tests nur mit erfundenen Daten.
 
+## Live-Daten schützen
+Es gibt nur **eine** D1-Datenbank, und die enthält echte Familiendaten (Rezepte, Allergien). Lokal läuft `wrangler dev` gegen eine lokale Kopie, alles mit `--remote` trifft die echten Daten.
+- Kein `DROP`, `DELETE` ohne `WHERE`, `TRUNCATE` und keine Migration, die Spalten oder Tabellen entfernt, ohne Marcos ausdrückliches OK im selben Schritt.
+- Keine `wrangler d1 execute … --remote`-Befehle, die schreiben, außer Marco gibt sie frei. Lesende Abfragen sind ok.
+- Eine Sperre oder ein Guard, der nicht sicher erkennt, ob er lokal oder remote läuft, **bricht ab**. Getestet wird nur lokal, **nie an der Live-DB**.
+- Vor jeder Migration wird gesichert: `npm run deploy` ruft `scripts/backup-db.sh` automatisch auf, einzeln geht es mit `npm run backup`. Die Sicherungen liegen in `backups/` (gitignored, nie committen, Inhalt nicht in den Chat lesen).
+- Wiederherstellen nur mit Marcos OK: `npx wrangler d1 execute familien-kochapp --remote --file backups/<datei>.sql` (vorher die betroffenen Tabellen leeren, sonst gibt es doppelte Einträge).
+
 ## Kernprinzipien
 - Server Components by default, Client nur wo interaktiv
 - Hover/Focus auf jedem interaktiven Element
