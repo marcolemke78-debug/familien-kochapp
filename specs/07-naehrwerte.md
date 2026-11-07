@@ -1,6 +1,6 @@
 # 07 — Nährwerte pro Portion
 
-**Status:** 🚧 In Arbeit
+**Status:** ✅ Fertig
 
 ## Ziel
 
