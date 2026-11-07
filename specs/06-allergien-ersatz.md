@@ -64,5 +64,6 @@ Die konkreten Allergene stehen **nur in D1**, eingegeben über die App. Sie steh
 - Datenschutz: Claude bekommt beim Ersatz nur Rezept + angetippte Zutaten, nie das Profil. Bis zu 3 Vorschläge je Zutat, lokal mit `safeSuggestions` gegen das eigene Profil gefiltert (Ersatz gilt als „roh unbekannt“). Effort `low`.
 - Vorschläge werden nicht gespeichert; Status `vorschlag` bleibt ungenutzt. Freigabe speichert direkt `freigegeben` für die angemeldete Person, der Server prüft Zutat und Profil erneut.
 - Ersatz geht auch für Zutaten ohne Allergie-Treffer („mag ich nicht“) und erscheint dann grün in der Zutatenliste.
+- Nachtrag nach iPhone-Test: Mehrzahl im Profil erkennt jetzt auch die Einzahl. Knopf „Andere Namen vorschlagen“ (Claude, Effort `low`): Nur der eine Begriff geht an Anthropic, und nur auf Knopfdruck. Vorschläge, die der Abgleich ohnehin erkennt, werden ausgefiltert.
 - Bekannte Grenzen: Ersatz-Menge rechnet nicht mit dem Portionen-Regler mit; kein Filter nach Badge; Zutatenzeile im Formular auf dem iPhone schmal (4 Knöpfe).
 
