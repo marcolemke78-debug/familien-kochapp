@@ -25,7 +25,7 @@ export type Device = (typeof DEVICES)[number]["value"];
 
 export const DEVICE_STATUS = {
   original: "Originalrezept",
-  ki: "KI-Vorschlag",
+  ki: "von KI umgerechnet",
   getestet: "getestet",
 } as const;
 export type DeviceStatus = keyof typeof DEVICE_STATUS;

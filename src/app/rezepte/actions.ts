@@ -8,6 +8,9 @@ import { parseRecipeForm, type FieldErrors, type RecipeInput } from "@/lib/recip
 import { deletePhoto, storePhoto } from "@/lib/photos";
 import * as recipes from "@/lib/recipes";
 import { DEVICES, type Device } from "@/lib/recipe-meta";
+import { formatIngredient } from "@/lib/ingredients";
+import { checkStep, variantInputSchema, type Variant } from "@/lib/convert";
+import { convertWithClaude } from "@/lib/convert-claude";
 
 export type SaveState = {
   message?: string;
@@ -114,4 +117,66 @@ export async function markDeviceTested(recipeId: number, device: Device): Promis
   }
   revalidatePath(`/rezepte/${recipeId}`);
   revalidatePath("/");
+}
+
+// --- Geräte-Umrechnung (Spec 05) --------------------------------------------
+
+const isDevice = (value: unknown): value is Device => DEVICES.some((d) => d.value === value);
+
+// Darf für dieses Gerät eine KI-Variante entstehen? Eine Geräteangabe aus dem Original (ohne Variante) bleibt unangetastet.
+async function variantBlocked(recipeId: number, device: Device): Promise<string | null> {
+  const row = await recipes.getDeviceRow(recipeId, device);
+  if (row && row.converted_at === null) return "Für dieses Gerät gibt es schon eine Anleitung aus dem Original.";
+  return null;
+}
+
+export type ConvertResult = { ok: true; variant: Variant } | { ok: false; error: string };
+
+// Liefert nur eine Vorschau, speichert nichts
+export async function convertRecipe(recipeId: number, device: Device): Promise<ConvertResult> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: NOT_LOGGED_IN };
+  if (!recipeIdSchema.safeParse(recipeId).success || !isDevice(device)) return { ok: false, error: "Unbekanntes Rezept oder Gerät." };
+
+  try {
+    const recipe = await recipes.getRecipe(recipeId);
+    if (!recipe) return { ok: false, error: "Dieses Rezept gibt es nicht mehr." };
+    const blocked = await variantBlocked(recipeId, device);
+    if (blocked) return { ok: false, error: blocked };
+    return await convertWithClaude(device, {
+      title: recipe.title,
+      servings: recipe.servings,
+      ingredients: recipe.ingredients.map(formatIngredient),
+      steps: recipe.steps,
+    });
+  } catch {
+    return { ok: false, error: "Die Umrechnung hat nicht geklappt. Bitte versuch es noch einmal." };
+  }
+}
+
+// replaceTested: ausdrücklich bestätigt, dass eine getestete Variante ersetzt werden darf
+export async function saveVariant(recipeId: number, device: Device, input: unknown, replaceTested: boolean): Promise<{ message: string } | void> {
+  const user = await getCurrentUser();
+  if (!user) return { message: NOT_LOGGED_IN };
+  if (!recipeIdSchema.safeParse(recipeId).success || !isDevice(device)) return { message: "Unbekanntes Rezept oder Gerät." };
+
+  const parsed = variantInputSchema(device).safeParse(input);
+  if (!parsed.success) return { message: "Bitte prüfe die Schritte: Jeder Schritt braucht einen Text." };
+  const variant: Variant = parsed.data;
+  if (variant.steps.some((step) => checkStep(device, step.settings).errors.length > 0)) {
+    return { message: "Einige Einstellungen kann das Gerät nicht. Bitte die rot markierten Werte ändern." };
+  }
+
+  try {
+    const row = await recipes.getDeviceRow(recipeId, device);
+    if (row && row.converted_at === null) return { message: "Für dieses Gerät gibt es schon eine Anleitung aus dem Original." };
+    if (row?.status === "getestet" && !replaceTested) return { message: "Die getestete Version wird nur nach Bestätigung ersetzt." };
+    if (!(await recipes.getPhotoKey(recipeId)).exists) return { message: "Dieses Rezept gibt es nicht mehr." };
+    await recipes.saveVariant(recipeId, device, variant);
+  } catch {
+    return { message: "Speichern hat nicht geklappt. Bitte versuch es noch einmal." };
+  }
+  revalidatePath(`/rezepte/${recipeId}`);
+  revalidatePath("/");
+  redirect(`/rezepte/${recipeId}?geraet=${device}`, RedirectType.replace);
 }

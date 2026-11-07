@@ -53,6 +53,8 @@ Format pro Eintrag: Kontext / Entscheidung / Warum / Alternativen.
 
 **Kosten (Schätzung):** Opus 5.5 kostet 4 $ pro 1 Mio. Eingabe-Token und 20 $ pro 1 Mio. Ausgabe-Token. Ein Import mit zwei Screenshots ≈ 5.500 Token rein und 2.000 raus ≈ 6–7 Cent, also rund 75 Imports im Monat. Gemessen am 07.11.2026 (2 Fotos, 1600 px): 6.979 Token rein, 499 raus, 7,9 Sekunden = **3,8 Cent**, also gut 130 Imports mit 5 $.
 
+**Nachtrag Spec 05 (07.11.2026):** Die Umrechnung läuft mit Effort `medium` (Garzeiten und Temperaturen brauchen mehr Abwägung als Abschreiben), nur Text: gemessen 0,9–1,7 Cent pro Umrechnung. Gemeinsame Anbindung in `src/lib/claude.ts`.
+
 **Alternativen:** Sonnet 5.5 (~3 Cent, ~150 Imports), Haiku 5.5 (~0,2 Cent, schwächer bei unscharfen Fotos und Handschrift). Wechsel ist eine Zeile (Modell-ID), falls das Budget knapp wird.
 
 ---

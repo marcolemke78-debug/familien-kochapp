@@ -36,3 +36,9 @@ Format pro Eintrag:
 - **Überraschend:** `! befehl` in Claude Code kann keine Eingabe abfragen. `wrangler secret put` meldete trotzdem „Success“ (leerer Wert), und der danach eingefügte Schlüssel landete im Chat und musste ersetzt werden. Beim zweiten Versuch lag in der Zwischenablage der kopierte Befehl statt des Schlüssels.
 - **Würde ich anders machen:** Secrets nur über ein Skript setzen, das die Zwischenablage vorher prüft (beginnt mit `sk-ant-`, keine Leerzeichen) und den Wert nie ausgibt. Reihenfolge: Befehl einfügen, dann Schlüssel kopieren, dann Enter. Prettier nie ohne Projekt-Konfiguration auf eine Datei loslassen (formatiert alles auf 80 Zeichen um).
 - **Gelernt:** Opus 5.5 mit Effort `low` liest Zutatengruppen, lässt Affiliate-Sätze und Nährwerte weg und kostet weniger als geschätzt. Client-Komponenten dürfen aus Server-Dateien (hier `import.ts` → `photos.ts` → Cloudflare) nur Typen importieren.
+
+## 2026-11-07 — Spec 05: Geräte umrechnen
+
+- **Überraschend:** Die KI kennt typische TM6-Praxis (Gareinsatz als Spritzschutz, Linkslauf beim Köcheln) und lehnt Suppe in der Heißluftfritteuse mit Begründung ab, statt etwas zu erfinden.
+- **Würde ich anders machen:** Die Chrome-Erweiterung vor UI-Arbeit verbinden. Ohne sie lassen sich Klick-Abläufe (Vorschau, Speichern) lokal nicht prüfen.
+- **Gelernt:** Felder mit eigenem Zustand in Listen brauchen stabile `key`s. Beim Entfernen eines Schritts rutschen Positionen nach, darum zählt ein Versionszähler im `key` mit. Zusammengesetzte Fremdschlüssel (`recipe_id, device`) funktionieren in D1 samt CASCADE.

@@ -44,3 +44,11 @@ Format pro Eintrag:
 - `src/lib/import.ts` (Dateiprüfung per Magic Bytes, max. 4 Fotos oder 1 PDF mit 10 Seiten / 10 MB, Prompt, Schema, `toDraft` entfernt Links und hält Formulargrenzen ein), `src/lib/import-claude.ts` (Aufruf, Fehlermeldungen pro Fehlerart).
 - Seite `/rezepte/import` (Datei wählen / Foto aufnehmen, Fortschritt mit Sekunden, Entwurf im normalen Formular, Quelle dann Pflicht, eigenes Foto optional als Rezeptfoto). Einstieg als Karte auf „Neues Rezept“.
 - Server-Action-Limit 6 → 11 MB (PDFs). Worker-Paket 1.390 KB gzip (vorher 980 KB, SDK).
+
+## 2026-11-07 — Spec 05: Rezept für TM6 oder Heißluftfritteuse umrechnen (live, auf dem iPhone getestet)
+
+- Migration `0004_device_variants.sql`: `recipe_devices.converted_at`, Tabelle `device_steps` (Schritt-Text + Einstellungen als JSON, CASCADE über `recipe_devices`).
+- `src/lib/convert.ts` (11 Tests): TM6- und Heißluft-Einstellungen, Grenzwerte (Fehler/Warnungen), Anzeige („5 Min. · 100 °C · Stufe 1“), Zeit-Eingabe „1:30“, Prompt mit unserem Gerät (Ninja FlexDrawer AF500EU), Schema.
+- Gemeinsame Claude-Anbindung `src/lib/claude.ts` (Import und Umrechnung), `convert-claude.ts` mit Effort `medium`. Kosten 0,9–1,7 Cent je Umrechnung.
+- Rezeptseite: Knöpfe „Für TM6/Heißluft umrechnen“ und „neu umrechnen“, Vorschau-Editor (Text + Auswahlfelder, Prüfung beim Tippen), Umschalter Original/TM6/Heißluft (`?geraet=`), Hinweis „Original wurde geändert“. Getestete Versionen werden nur nach Bestätigung ersetzt.
+- Badge-Text „KI-Vorschlag“ → „von KI umgerechnet“.

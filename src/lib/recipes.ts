@@ -4,11 +4,13 @@
 // (50 Abfragen pro Aufruf, 100 Parameter pro Abfrage), egal wie viele Zutaten es hat.
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import type { Ingredient } from "./ingredients";
+import type { Variant, VariantStep } from "./convert";
 import type { RecipeInput } from "./recipe-input";
 import { DEVICES, type Device, type DeviceStatus, type Tag } from "./recipe-meta";
 import { buildFilterSql, EMPTY_FILTERS, type Filters } from "./recipe-query";
 
-export type RecipeDevice = { device: Device; status: DeviceStatus; hint: string | null };
+// convertedAt gesetzt = es gibt eine KI-Variante mit eigenen Schritten (Spec 05)
+export type RecipeDevice = { device: Device; status: DeviceStatus; hint: string | null; convertedAt: string | null };
 
 export type RecipeSummary = {
   id: number;
@@ -21,6 +23,7 @@ export type RecipeSummary = {
 
 export type Recipe = RecipeSummary & {
   clientId: string;
+  updatedAt: string;
   description: string | null;
   sourceUrl: string | null;
   sourceNote: string | null;
@@ -38,6 +41,7 @@ type RecipeRow = {
   prep_minutes: number | null;
   source_url: string | null;
   source_note: string | null;
+  updated_at?: string;
   photo_key: string | null;
   devices: string | null;
 };
@@ -57,7 +61,7 @@ function parseDevices(json: string | null): RecipeDevice[] {
   return list.filter((d) => d && d.device).sort((a, b) => order.indexOf(a.device) - order.indexOf(b.device)); // TM6 zuerst
 }
 
-const DEVICES_JSON = `(SELECT json_group_array(json_object('device', d.device, 'status', d.status, 'hint', d.hint))
+const DEVICES_JSON = `(SELECT json_group_array(json_object('device', d.device, 'status', d.status, 'hint', d.hint, 'convertedAt', d.converted_at))
   FROM recipe_devices d WHERE d.recipe_id = r.id) AS devices`;
 
 export async function listRecipes(filters: Filters = EMPTY_FILTERS): Promise<RecipeSummary[]> {
@@ -94,6 +98,7 @@ export async function getRecipe(id: number): Promise<Recipe | null> {
   return {
     id: r.id,
     clientId: r.client_id,
+    updatedAt: r.updated_at ?? "",
     title: r.title,
     description: r.description,
     servings: r.servings,
@@ -213,4 +218,44 @@ export async function markDeviceTested(id: number, device: Device): Promise<bool
     .bind(id, device)
     .run();
   return result.meta.changes > 0;
+}
+
+// --- Geräte-Varianten (Spec 05) ---------------------------------------------
+
+export async function getVariantSteps(id: number, device: Device): Promise<VariantStep[]> {
+  const { results } = await (await db())
+    .prepare(`SELECT text, settings FROM device_steps WHERE recipe_id = ?1 AND device = ?2 ORDER BY position`)
+    .bind(id, device)
+    .all<{ text: string; settings: string | null }>();
+  return results.map((r) => ({ text: r.text, settings: r.settings ? JSON.parse(r.settings) : null }));
+}
+
+export async function getDeviceRow(id: number, device: Device) {
+  return (await db())
+    .prepare(`SELECT status, converted_at FROM recipe_devices WHERE recipe_id = ?1 AND device = ?2`)
+    .bind(id, device)
+    .first<{ status: DeviceStatus; converted_at: string | null }>();
+}
+
+// Speichert die Variante in EINER Transaktion: Status "ki", Hinweis, Zeitpunkt, Schritte neu.
+// Ob überschrieben werden darf, prüft die Server Action vorher (getDeviceRow).
+export async function saveVariant(id: number, device: Device, variant: Variant): Promise<void> {
+  const database = await db();
+  await database.batch([
+    database
+      .prepare(
+        `INSERT INTO recipe_devices (recipe_id, device, status, hint, converted_at)
+         VALUES (?1, ?2, 'ki', ?3, datetime('now'))
+         ON CONFLICT (recipe_id, device) DO UPDATE SET status = 'ki', hint = excluded.hint, converted_at = excluded.converted_at`,
+      )
+      .bind(id, device, variant.hint || null),
+    database.prepare(`DELETE FROM device_steps WHERE recipe_id = ?1 AND device = ?2`).bind(id, device),
+    database
+      .prepare(
+        `INSERT INTO device_steps (recipe_id, device, position, text, settings)
+         SELECT ?1, ?2, j.key, json_extract(j.value, '$.text'), json_extract(j.value, '$.settings')
+         FROM json_each(?3) j`,
+      )
+      .bind(id, device, JSON.stringify(variant.steps)),
+  ]);
 }
