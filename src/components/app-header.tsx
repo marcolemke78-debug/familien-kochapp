@@ -28,13 +28,14 @@ export function AppHeader({ userName }: AppHeaderProps) {
               <Plus className="size-5" aria-hidden />
               <span className="sr-only">Neues Rezept</span>
             </Link>
-            <div
-              className="flex size-11 items-center justify-center rounded-full border border-border bg-card text-sm font-semibold text-foreground"
-              title={`Angemeldet als ${userName}`}
+            <Link
+              href="/profil"
+              className="flex size-11 items-center justify-center rounded-full border border-border bg-card text-sm font-semibold text-foreground transition-colors duration-150 ease-out outline-none hover:border-primary/50 hover:text-primary focus-visible:ring-3 focus-visible:ring-ring/50"
+              title={`Mein Profil (${userName})`}
             >
               <span aria-hidden>{userName.charAt(0)}</span>
-              <span className="sr-only">Angemeldet als {userName}</span>
-            </div>
+              <span className="sr-only">Mein Profil, angemeldet als {userName}</span>
+            </Link>
           </div>
         )}
       </div>
