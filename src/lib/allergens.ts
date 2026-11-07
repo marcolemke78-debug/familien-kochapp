@@ -144,12 +144,24 @@ export function markIngredients(
       const people = subs.map((s) => ({ person: names.get(s.userId) ?? "Unbekannt", allergen: null, level: null, replacement: s.replacement }));
       return { level: "ok", people };
     }
-    const people: IngredientMark["people"] = hits.map((hit) => ({
-      person: names.get(hit.userId) ?? "Unbekannt",
-      allergen: ruleById.get(hit.ruleId)?.name ?? "",
-      level: hit.level,
-      replacement: subs.find((s) => s.userId === hit.userId)?.replacement ?? null,
-    }));
+    // Je Person eine Zeile: mehrere Einträge mit Treffer zusammenfassen, rot schlägt gelb
+    const byUser = new Map<number, IngredientMark["people"][number]>();
+    for (const hit of hits) {
+      const allergen = ruleById.get(hit.ruleId)?.name ?? "";
+      const prev = byUser.get(hit.userId);
+      if (prev) {
+        prev.allergen = `${prev.allergen}, ${allergen}`;
+        if (hit.level === "red") prev.level = "red";
+        continue;
+      }
+      byUser.set(hit.userId, {
+        person: names.get(hit.userId) ?? "Unbekannt",
+        allergen,
+        level: hit.level,
+        replacement: subs.find((s) => s.userId === hit.userId)?.replacement ?? null,
+      });
+    }
+    const people = [...byUser.values()];
     const open = people.filter((p) => p.replacement === null);
     const level = open.length === 0 ? "ok" : open.some((p) => p.level === "red") ? "red" : "yellow";
     return { level, people };

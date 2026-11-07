@@ -112,6 +112,14 @@ describe("markIngredients", () => {
     expect(marks[3]).toEqual({ level: "yellow", people: [{ person: "Testperson B", allergen: "Quimbe", level: "yellow", replacement: null }] });
   });
 
+  it("fasst mehrere Treffer derselben Person zu einer Zeile zusammen, rot schlägt gelb", () => {
+    const own = [rule({ id: 3, name: "Plimm", synonyms: ["Zorbel"], mode: "raw_only" }), rule()];
+    expect(markIngredients([{ name: "Zorbel" }], own, [], names)[0]).toEqual({
+      level: "red",
+      people: [{ person: "Testperson A", allergen: "Plimm, Zorbel", level: "red", replacement: null }],
+    });
+  });
+
   it("gegart bei nur_roh ist unbedenklich, roh ist rot", () => {
     const marks = markIngredients([{ name: "Quimbe", raw: false }, { name: "Quimbe", raw: true }], rules, [], names);
     expect(marks[0]).toBeNull();
