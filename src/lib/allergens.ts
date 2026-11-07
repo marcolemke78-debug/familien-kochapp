@@ -106,7 +106,8 @@ export type ApprovedSubstitution = { ingredientKey: string; userId: number; repl
 // "ok" = betroffen, aber jede betroffene Person hat freigegebenen Ersatz
 export type IngredientMark = {
   level: "red" | "yellow" | "ok";
-  people: { person: string; allergen: string; level: "red" | "yellow"; replacement: string | null }[];
+  // allergen/level null = kein Allergie-Treffer, nur freigegebener Ersatz ("mag ich nicht")
+  people: { person: string; allergen: string | null; level: "red" | "yellow" | null; replacement: string | null }[];
 };
 
 /**
@@ -123,13 +124,18 @@ export function markIngredients(
   return ingredients.map((ing) => {
     if (ing.heading) return null;
     const hits = checkIngredient(ing.name, ing.raw ?? null, rules);
-    if (hits.length === 0) return null;
     const key = ingredientKey(ing.name);
-    const people = hits.map((hit) => ({
+    const subs = approved.filter((s) => s.ingredientKey === key);
+    if (hits.length === 0) {
+      if (subs.length === 0) return null;
+      const people = subs.map((s) => ({ person: names.get(s.userId) ?? "Unbekannt", allergen: null, level: null, replacement: s.replacement }));
+      return { level: "ok", people };
+    }
+    const people: IngredientMark["people"] = hits.map((hit) => ({
       person: names.get(hit.userId) ?? "Unbekannt",
       allergen: ruleById.get(hit.ruleId)?.name ?? "",
       level: hit.level,
-      replacement: approved.find((s) => s.ingredientKey === key && s.userId === hit.userId)?.replacement ?? null,
+      replacement: subs.find((s) => s.userId === hit.userId)?.replacement ?? null,
     }));
     const open = people.filter((p) => p.replacement === null);
     const level = open.length === 0 ? "ok" : open.some((p) => p.level === "red") ? "red" : "yellow";

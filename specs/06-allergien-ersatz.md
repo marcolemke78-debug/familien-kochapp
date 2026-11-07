@@ -1,6 +1,6 @@
 # 06 — Allergien und Ersatz-Zutaten
 
-**Status:** ⏳ Geplant
+**Status:** ✅ Fertig (lokal getestet, 07.11.2026)
 
 ## Ziel
 
@@ -42,14 +42,14 @@ Die konkreten Allergene stehen **nur in D1**, eingegeben über die App. Sie steh
 - [x] Einstellungsseite: Allergen-Profil pflegen (nur angemeldete Familie)
 - [x] Rezeptseite: betroffene Zutaten rot (sicher betroffen) oder gelb (prüfen), daneben freigegebener Ersatz
 - [x] Rezeptliste: Badge „passt“ / „mit Ersatz“ / „prüfen“ / „nicht geeignet“ für die ganze Familie (Filter vorerst weggelassen, YAGNI)
-- [ ] Knopf „Diese Zutaten besser nicht“: Zutaten antippen → KI-Ersatzvorschläge → Freigabe durch die Person
+- [x] Knopf „Diese Zutaten besser nicht“: Zutaten antippen → KI-Ersatzvorschläge → Freigabe durch die Person
 - [x] Abgleich `src/lib/allergens.ts` per TDD (Synonyme, Modus `nur_roh`, Groß-/Kleinschreibung, Plural)
 
 ## Tasks
 
-- [ ] Freigabe-Recht: Nur die Person, zu der das Allergen-Profil gehört (entschieden 06.11.2026). Der Server prüft das, die UI blendet den Knopf für andere aus.
-- [ ] Datenmodell, Abgleich-Logik per TDD
-- [ ] Profil-UI, Markierung im Rezept, Ersatz-Dialog
+- [x] Freigabe-Recht: Nur die Person, zu der das Allergen-Profil gehört (entschieden 06.11.2026). Der Server prüft das, die UI blendet den Knopf für andere aus.
+- [x] Datenmodell, Abgleich-Logik per TDD
+- [x] Profil-UI, Markierung im Rezept, Ersatz-Dialog
 
 ## Validation
 
@@ -60,4 +60,9 @@ Die konkreten Allergene stehen **nur in D1**, eingegeben über die App. Sie steh
 - `rules/code-conventions.md`, `superpowers:test-driven-development`, Skill `claude-api`
 
 ## Debrief
+
+- Datenschutz: Claude bekommt beim Ersatz nur Rezept + angetippte Zutaten, nie das Profil. Bis zu 3 Vorschläge je Zutat, lokal mit `safeSuggestions` gegen das eigene Profil gefiltert (Ersatz gilt als „roh unbekannt“). Effort `low`.
+- Vorschläge werden nicht gespeichert; Status `vorschlag` bleibt ungenutzt. Freigabe speichert direkt `freigegeben` für die angemeldete Person, der Server prüft Zutat und Profil erneut.
+- Ersatz geht auch für Zutaten ohne Allergie-Treffer („mag ich nicht“) und erscheint dann grün in der Zutatenliste.
+- Bekannte Grenzen: Ersatz-Menge rechnet nicht mit dem Portionen-Regler mit; kein Filter nach Badge; Zutatenzeile im Formular auf dem iPhone schmal (4 Knöpfe).
 

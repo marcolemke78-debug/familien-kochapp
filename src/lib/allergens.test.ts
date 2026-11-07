@@ -117,6 +117,16 @@ describe("markIngredients", () => {
     });
   });
 
+  it("zeigt freigegebenen Ersatz auch bei Zutaten ohne Allergie-Treffer", () => {
+    const subs = [{ ingredientKey: "mehl", userId: 2, replacement: "Testmehl" }];
+    expect(markIngredients([{ name: "Mehl" }], rules, subs, names)[0]).toEqual({
+      level: "ok",
+      people: [{ person: "Testperson B", allergen: null, level: null, replacement: "Testmehl" }],
+    });
+    // auch ganz ohne Regeln
+    expect(markIngredients([{ name: "Mehl" }], [], subs, names)[0]?.level).toBe("ok");
+  });
+
   it("Ersatz einer anderen Person zählt nicht", () => {
     const subs = [{ ingredientKey: "zorbel", userId: 2, replacement: "Testersatz" }];
     expect(markIngredients([{ name: "Zorbel" }], rules, subs, names)[0]?.level).toBe("red");

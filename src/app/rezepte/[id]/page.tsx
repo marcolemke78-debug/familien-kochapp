@@ -13,7 +13,9 @@ import { NoAccess } from "@/components/no-access";
 import { RecipePhoto } from "@/components/recipe-photo";
 import { DeviceBadge } from "@/components/device-badge";
 import { ScaledIngredients } from "@/components/scaled-ingredients";
-import { markIngredients } from "@/lib/allergens";
+import { checkIngredient, ingredientKey, markIngredients } from "@/lib/allergens";
+import { formatIngredient } from "@/lib/ingredients";
+import { SubstituteSheet, type SubstituteIngredient } from "@/components/substitute-sheet";
 import { listApprovedSubstitutions, listFamilyNames, listRules } from "@/lib/allergen-store";
 import { MarkTestedButton } from "@/components/mark-tested-button";
 import { DeleteRecipeButton } from "@/components/delete-recipe-button";
@@ -40,7 +42,22 @@ export default async function RecipePage({ params, searchParams }: PageProps<"/r
   const originalChanged = !!active?.convertedAt && recipe.updatedAt > active.convertedAt;
   // Spec 06: Allergie-Markierungen der ganzen Familie
   const [rules, approved, names] = await Promise.all([listRules(), listApprovedSubstitutions(recipe.id), listFamilyNames()]);
-  const marks = rules.length > 0 ? markIngredients(recipe.ingredients, rules, approved, names) : [];
+  const marks = rules.length > 0 || approved.length > 0 ? markIngredients(recipe.ingredients, rules, approved, names) : [];
+  // Für "Diese Zutaten besser nicht": eigene Treffer vorauswählen, eigenen Ersatz anzeigen
+  const myRules = rules.filter((r) => r.userId === user.id);
+  const substituteIngredients: SubstituteIngredient[] = recipe.ingredients.flatMap((ing, position) =>
+    ing.heading
+      ? []
+      : [
+          {
+            position,
+            name: ing.name,
+            line: formatIngredient(ing),
+            mine: checkIngredient(ing.name, ing.raw ?? null, myRules).length > 0,
+            myReplacement: approved.find((s) => s.userId === user.id && s.ingredientKey === ingredientKey(ing.name))?.replacement ?? null,
+          },
+        ],
+  );
   const convertible = DEVICES.filter((d) => !recipe.devices.some((x) => x.device === d.value));
 
   const hostname = recipe.sourceUrl ? new URL(recipe.sourceUrl).hostname.replace(/^www\./, "") : null;
@@ -150,6 +167,9 @@ export default async function RecipePage({ params, searchParams }: PageProps<"/r
       <div className={cn("grid gap-10", variants.length > 0 ? "mt-6" : "mt-10", "lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-12")}>
         <div className="lg:sticky lg:top-24 lg:self-start">
           <ScaledIngredients ingredients={recipe.ingredients} baseServings={recipe.servings} marks={marks} />
+          <div className="mt-4">
+            <SubstituteSheet recipeId={recipe.id} ingredients={substituteIngredients} />
+          </div>
         </div>
 
         <section aria-labelledby="zubereitung" className="space-y-5">

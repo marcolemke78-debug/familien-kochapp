@@ -110,7 +110,7 @@ function MarkDetails({ mark, className, Icon }: { mark: IngredientMark; classNam
           <Icon className="mt-0.5 size-4 shrink-0" aria-hidden />
           <span>
             {p.replacement
-              ? `Für ${p.person}: ${p.replacement} statt ${p.allergen}`
+              ? `Für ${p.person}: ${p.replacement}`
               : p.level === "red"
                 ? `Enthält ${p.allergen} (${p.person})`
                 : `Prüfen: roh oder gegart? ${p.allergen} (${p.person})`}

@@ -81,3 +81,30 @@ export async function listAllergenData(): Promise<{
   }
   return { ingredients, approved };
 }
+
+/** Freigabe durch die Person selbst: legt an oder ersetzt den bisherigen Ersatz dieser Zutat */
+export async function approveSubstitution(
+  recipeId: number,
+  key: string,
+  userId: number,
+  replacement: string,
+  note: string | null,
+): Promise<void> {
+  await (await db())
+    .prepare(
+      `INSERT INTO substitutions (recipe_id, ingredient_key, user_id, replacement, note, status, approved_by, approved_at)
+       VALUES (?1, ?2, ?3, ?4, ?5, 'freigegeben', ?3, datetime('now'))
+       ON CONFLICT (recipe_id, ingredient_key, user_id) DO UPDATE SET
+         replacement = excluded.replacement, note = excluded.note, status = 'freigegeben',
+         approved_by = excluded.approved_by, approved_at = excluded.approved_at`,
+    )
+    .bind(recipeId, key, userId, replacement, note)
+    .run();
+}
+
+export async function removeSubstitution(recipeId: number, key: string, userId: number): Promise<void> {
+  await (await db())
+    .prepare(`DELETE FROM substitutions WHERE recipe_id = ?1 AND ingredient_key = ?2 AND user_id = ?3`)
+    .bind(recipeId, key, userId)
+    .run();
+}
