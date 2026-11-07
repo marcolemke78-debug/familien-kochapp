@@ -115,6 +115,15 @@ describe("rankCandidates", () => {
     expect(ranked).not.toContain("C");
   });
 
+  it("ganzes Wort schlägt Wortanfang, Wortanfang schlägt Wortteil", () => {
+    const rows = [
+      { code: "A", name: "Plimmzorbel", search: "plimmzorbel" },
+      { code: "B", name: "Zorbelkuchen", search: "zorbelkuchen" },
+      { code: "C", name: "Zorbel frisch, ungesüßt, pasteurisiert", search: "zorbel frisch ungesusst pasteurisiert" },
+    ];
+    expect(rankCandidates("Zorbel", rows).map((r) => r.code)).toEqual(["C", "B", "A"]);
+  });
+
   it("findet getrennt geschriebene Namen und wertet Einzahl wie einen vollen Treffer", () => {
     const rows = [
       { code: "A", name: "Zorbelplimmekuchen", search: "zorbelplimmekuchen" },

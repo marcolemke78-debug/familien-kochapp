@@ -3,10 +3,11 @@ import { parseFilters, buildFilterSql, filterHref, hasFilters, EMPTY_FILTERS } f
 
 describe("parseFilters", () => {
   it("liest Mahlzeit, Merkmal, Gerät und Suchtext aus der URL", () => {
-    expect(parseFilters({ mahlzeit: "abend,fruehstueck", merkmal: "schnell", geraet: "airfryer", q: "  Nudeln " })).toEqual({
+    expect(parseFilters({ mahlzeit: "abend,fruehstueck", merkmal: "schnell", geraet: "airfryer", naehrwert: "lowcarb", q: "  Nudeln " })).toEqual({
       meals: ["abend", "fruehstueck"],
       traits: ["schnell"],
       devices: ["airfryer"],
+      nutrition: ["lowcarb"],
       q: "Nudeln",
     });
   });
@@ -16,6 +17,7 @@ describe("parseFilters", () => {
       meals: ["abend"],
       traits: ["schnell"],
       devices: [],
+      nutrition: [],
       q: "",
     });
   });
@@ -33,20 +35,20 @@ describe("buildFilterSql", () => {
   });
 
   it("verknüpft Gruppen mit UND und Werte innerhalb einer Gruppe mit ODER", () => {
-    const { where, params } = buildFilterSql({ meals: ["abend", "backen"], traits: ["schnell"], devices: ["tm6"], q: "" });
+    const { where, params } = buildFilterSql({ meals: ["abend", "backen"], traits: ["schnell"], devices: ["tm6"], nutrition: [], q: "" });
     expect(where.match(/ AND /g)?.length).toBeGreaterThanOrEqual(2);
     expect(where).toContain("IN (?, ?)");
     expect(params).toEqual(["abend", "backen", "schnell", "tm6"]);
   });
 
   it("sucht in Titel und Zutaten, auch mit großem Anfangsbuchstaben bei Umlauten", () => {
-    const { where, params } = buildFilterSql({ meals: [], traits: [], devices: [], q: "öl" });
+    const { where, params } = buildFilterSql({ meals: [], traits: [], devices: [], nutrition: [], q: "öl" });
     expect(where).toContain("LIKE");
     expect(params).toEqual(["%öl%", "%Öl%", "%öl%", "%Öl%"]);
   });
 
   it("behandelt % und _ im Suchtext als normale Zeichen und baut nie Nutzertext ins SQL ein", () => {
-    const { where, params } = buildFilterSql({ meals: [], traits: [], devices: [], q: "50%_'; DROP TABLE recipes;--" });
+    const { where, params } = buildFilterSql({ meals: [], traits: [], devices: [], nutrition: [], q: "50%_'; DROP TABLE recipes;--" });
     expect(where).not.toContain("DROP");
     expect(params[0]).toBe("%50\\%\\_'; drop table recipes;--%"); // kleingeschrieben, Platzhalter entschärft
   });
@@ -54,8 +56,9 @@ describe("buildFilterSql", () => {
 
 describe("filterHref", () => {
   it("schaltet einen Chip an und aus und behält die übrigen Filter", () => {
-    const current = { meals: ["abend" as const], traits: [], devices: [], q: "nudel" };
+    const current = { meals: ["abend" as const], traits: [], devices: [], nutrition: [], q: "nudel" };
     expect(filterHref(current, "devices", "tm6")).toBe("/?mahlzeit=abend&geraet=tm6&q=nudel");
+    expect(filterHref(current, "nutrition", "lowcarb")).toBe("/?mahlzeit=abend&naehrwert=lowcarb&q=nudel");
     expect(filterHref(current, "meals", "abend")).toBe("/?q=nudel");
     expect(filterHref(EMPTY_FILTERS, "meals", "abend")).toBe("/?mahlzeit=abend");
   });
@@ -63,5 +66,6 @@ describe("filterHref", () => {
   it("erkennt, ob Filter aktiv sind", () => {
     expect(hasFilters(EMPTY_FILTERS)).toBe(false);
     expect(hasFilters({ ...EMPTY_FILTERS, q: "x" })).toBe(true);
+    expect(hasFilters({ ...EMPTY_FILTERS, nutrition: ["lowcarb"] })).toBe(true);
   });
 });

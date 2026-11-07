@@ -110,11 +110,17 @@ export function rankCandidates<T extends BlsRow>(name: string, rows: T[], limit 
   return rows
     .map((row) => {
       const compact = row.search.replaceAll(" ", ""); // "Hafer Flocken" ↔ "Haferflocken"
+      const firstWord = row.search.split(" ")[0];
+      const head = tokenize(row.name.split(",")[0]).join(""); // Name bis zum ersten Komma, ohne Leerzeichen
       let score = 0;
       for (const { t, forms, fragments } of tokens) {
         // Einzahl/Mehrzahl gilt als ganzes Wort, sonst zählt der Anteil des längsten Wortteils
         const best = Math.max(0, ...fragments.filter((f) => compact.includes(f)).map((f) => (forms.has(f) ? t.length : f.length)));
         score += Math.min(best, t.length) / t.length;
+        // Der BLS nennt das Grundlebensmittel zuerst: Bonus, wenn der Name damit beginnt ("Milch fettarm" vor "Buttermilch"),
+        // noch mehr, wenn das erste Wort bzw. der Teil vor dem Komma genau die Zutat ist ("Hafer Flocken")
+        if ([...forms].some((f) => compact.startsWith(f))) score += 0.5;
+        if (forms.has(firstWord) || forms.has(head)) score += 0.5;
       }
       return { row, score };
     })

@@ -9,6 +9,8 @@ import { RecipeCard } from "@/components/recipe-card";
 import { familySuitability, type Suitability } from "@/lib/allergens";
 import { listAllergenData, listRules } from "@/lib/allergen-store";
 import { buttonVariants } from "@/components/ui/button";
+import { computeNutrition, isLowCarb } from "@/lib/nutrition";
+import { listIngredientsForNutrition, listMappings } from "@/lib/nutrition-store";
 
 export default async function HomePage({ searchParams }: PageProps<"/">) {
   const user = await getCurrentUser();
@@ -16,7 +18,13 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
 
   const filters = parseFilters(await searchParams);
   const filtered = hasFilters(filters);
-  const [recipes, rules] = await Promise.all([listRecipes(filters), listRules()]);
+  const [all, rules] = await Promise.all([listRecipes(filters), listRules()]);
+  // Spec 07: Low Carb wird berechnet, nicht in SQL gefiltert
+  let recipes = all;
+  if (filters.nutrition.includes("lowcarb")) {
+    const [ingredients, mappings] = await Promise.all([listIngredientsForNutrition(), listMappings()]);
+    recipes = all.filter((r) => isLowCarb(computeNutrition(ingredients.get(r.id) ?? [], mappings, r.servings)));
+  }
   // Spec 06: Badge nur, wenn jemand in der Familie Allergien eingetragen hat
   const suitability = new Map<number, Suitability>();
   if (rules.length > 0) {

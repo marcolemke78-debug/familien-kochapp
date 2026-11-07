@@ -36,19 +36,19 @@ Als Familienmitglied möchte ich pro Portion Kalorien, Eiweiß, Fett, Kohlenhydr
 ## Akzeptanzkriterien
 
 - [x] ADR zur BLS-Lizenz in `guidelines.md` (ADR-004)
-- [ ] BLS-Daten in D1 importiert (Skript, Quelle und Version dokumentiert)
-- [ ] Jede Zutat ist einem BLS-Eintrag zugeordnet (Vorschlag per Namenssuche, bestätigt durch Nutzer)
-- [ ] Rezeptseite: Nährwerte pro Portion, Hinweis bei unvollständiger Berechnung
-- [ ] Filter „Low Carb“: höchstens 20 g Kohlenhydrate pro Portion (mit Marco festgelegt am 07.11.2026)
-- [ ] Rechenlogik `src/lib/nutrition.ts` per TDD
+- [x] BLS-Daten in D1 importiert (Skript, Quelle und Version dokumentiert)
+- [x] Jede Zutat ist einem BLS-Eintrag zugeordnet (Vorschlag per Namenssuche, bestätigt durch Nutzer)
+- [x] Rezeptseite: Nährwerte pro Portion, Hinweis bei unvollständiger Berechnung
+- [x] Filter „Low Carb“: höchstens 20 g Kohlenhydrate pro Portion (mit Marco festgelegt am 07.11.2026)
+- [x] Rechenlogik `src/lib/nutrition.ts` per TDD
 
 ## Tasks
 
 - [x] Lizenz prüfen, ADR
-- [ ] Migration `0006_nutrition.sql` + Importskript, Daten lokal und remote
-- [ ] `src/lib/nutrition.ts` per TDD: Gramm je Zeile, Summe pro Portion, Kandidaten-Suchbegriffe
-- [ ] Store + Server Actions (vorschlagen, speichern, suchen), Claude-Aufruf
-- [ ] UI: Nährwert-Karte, Zuordnungs-Fenster, Low-Carb-Filter, Quellenangabe (auch README)
+- [x] Migration `0006_nutrition.sql` + Importskript, Daten lokal und remote
+- [x] `src/lib/nutrition.ts` per TDD: Gramm je Zeile, Summe pro Portion, Kandidaten-Suchbegriffe
+- [x] Store + Server Actions (vorschlagen, speichern, suchen), Claude-Aufruf
+- [x] UI: Nährwert-Karte, Zuordnungs-Fenster, Low-Carb-Filter, Quellenangabe (auch README)
 
 ## Validation
 
@@ -59,4 +59,8 @@ Als Familienmitglied möchte ich pro Portion Kalorien, Eiweiß, Fett, Kohlenhydr
 - `superpowers:test-driven-development`, `rules/code-conventions.md`
 
 ## Debrief
+
+- **Suche:** Der BLS schreibt anders als Rezepte („Hafer Flocken“, „Speisequark Magerstufe“, „Hühnerei“). Lokale Suche mit Wortteilen + Bonus für den Namensanfang bringt den richtigen Eintrag unter die ersten 20; Claude wählt daraus. Passt nichts, nennt Claude einen Suchbegriff und es gibt eine zweite Runde.
+- **Stichprobe:** Testrezept lokal von Hand nachgerechnet (266 kcal, 42,3 g KH pro Portion), stimmt mit der Anzeige überein. Low-Carb-Filter in beide Richtungen geprüft.
+- **Bewusst weggelassen:** Mikronährstoffe, kcal auf den Karten der Liste, gespeichertes Ergebnis (wird immer frisch gerechnet).
 

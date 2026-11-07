@@ -21,6 +21,9 @@ import { MarkTestedButton } from "@/components/mark-tested-button";
 import { DeleteRecipeButton } from "@/components/delete-recipe-button";
 import { formatMinutes } from "@/components/recipe-card";
 import { buttonVariants } from "@/components/ui/button";
+import { NutritionCard } from "@/components/nutrition-card";
+import { computeNutrition } from "@/lib/nutrition";
+import { listMappings } from "@/lib/nutrition-store";
 
 export const metadata: Metadata = { title: "Rezept · Familienkochbuch" };
 
@@ -41,7 +44,14 @@ export default async function RecipePage({ params, searchParams }: PageProps<"/r
   // Beide Zeitstempel sind "JJJJ-MM-TT HH:MM:SS" aus SQLite, darum als Text vergleichbar
   const originalChanged = !!active?.convertedAt && recipe.updatedAt > active.convertedAt;
   // Spec 06: Allergie-Markierungen der ganzen Familie
-  const [rules, approved, names] = await Promise.all([listRules(), listApprovedSubstitutions(recipe.id), listFamilyNames()]);
+  const [rules, approved, names, nutritionMappings] = await Promise.all([
+    listRules(),
+    listApprovedSubstitutions(recipe.id),
+    listFamilyNames(),
+    listMappings(),
+  ]);
+  // Spec 07: Nährwerte frisch aus Zutaten und Zuordnungen
+  const nutrition = computeNutrition(recipe.ingredients, nutritionMappings, recipe.servings);
   const marks = rules.length > 0 || approved.length > 0 ? markIngredients(recipe.ingredients, rules, approved, names) : [];
   // Für "Diese Zutaten besser nicht": eigene Treffer vorauswählen, eigenen Ersatz anzeigen
   const myRules = rules.filter((r) => r.userId === user.id);
@@ -169,6 +179,9 @@ export default async function RecipePage({ params, searchParams }: PageProps<"/r
           <ScaledIngredients ingredients={recipe.ingredients} baseServings={recipe.servings} marks={marks} />
           <div className="mt-4">
             <SubstituteSheet recipeId={recipe.id} ingredients={substituteIngredients} />
+          </div>
+          <div className="mt-6">
+            <NutritionCard recipeId={recipe.id} result={nutrition} />
           </div>
         </div>
 

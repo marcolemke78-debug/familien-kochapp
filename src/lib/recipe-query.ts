@@ -3,16 +3,21 @@
 // damit Zurück-Taste und Lesezeichen funktionieren. Nutzertext kommt nur als gebundener Parameter ins SQL.
 import { DEVICES, MEALS, TRAITS, type Device, type Tag } from "./recipe-meta";
 
-export type Filters = { meals: Tag[]; traits: Tag[]; devices: Device[]; q: string };
-type ListKey = "meals" | "traits" | "devices";
+// nutrition: Spec 07, wird nicht in SQL gefiltert, sondern nach der Berechnung in der Rezeptliste
+export const NUTRITION_FILTERS = [{ value: "lowcarb", label: "Low Carb" }] as const;
+export type NutritionFilter = (typeof NUTRITION_FILTERS)[number]["value"];
 
-export const EMPTY_FILTERS: Filters = { meals: [], traits: [], devices: [], q: "" };
+export type Filters = { meals: Tag[]; traits: Tag[]; devices: Device[]; nutrition: NutritionFilter[]; q: string };
+type ListKey = "meals" | "traits" | "devices" | "nutrition";
+
+export const EMPTY_FILTERS: Filters = { meals: [], traits: [], devices: [], nutrition: [], q: "" };
 
 // Feld in der Filter-Struktur -> Name in der URL und erlaubte Werte
 const GROUPS: Record<ListKey, { param: string; allowed: readonly string[] }> = {
   meals: { param: "mahlzeit", allowed: MEALS.map((m) => m.value) },
   traits: { param: "merkmal", allowed: TRAITS.map((t) => t.value) },
   devices: { param: "geraet", allowed: DEVICES.map((d) => d.value) },
+  nutrition: { param: "naehrwert", allowed: NUTRITION_FILTERS.map((n) => n.value) },
 };
 
 type SearchParams = Record<string, string | string[] | undefined>;
@@ -31,12 +36,13 @@ export function parseFilters(sp: SearchParams): Filters {
     meals: list(sp[GROUPS.meals.param], GROUPS.meals.allowed) as Tag[],
     traits: list(sp[GROUPS.traits.param], GROUPS.traits.allowed) as Tag[],
     devices: list(sp[GROUPS.devices.param], GROUPS.devices.allowed) as Device[],
+    nutrition: list(sp[GROUPS.nutrition.param], GROUPS.nutrition.allowed) as NutritionFilter[],
     q: first(sp.q).trim().slice(0, 100),
   };
 }
 
 export function hasFilters(f: Filters): boolean {
-  return f.meals.length + f.traits.length + f.devices.length > 0 || f.q !== "";
+  return f.meals.length + f.traits.length + f.devices.length + f.nutrition.length > 0 || f.q !== "";
 }
 
 // % und _ sind in LIKE Platzhalter -> mit \ entschärfen
@@ -83,7 +89,7 @@ export function filterHref(current: Filters, key: ListKey, value: string): strin
   const values = current[key] as string[];
   const next = { ...current, [key]: values.includes(value) ? values.filter((v) => v !== value) : [...values, value] };
   const sp = new URLSearchParams();
-  for (const k of ["meals", "traits", "devices"] as const) {
+  for (const k of ["meals", "traits", "devices", "nutrition"] as const) {
     if (next[k].length) sp.set(GROUPS[k].param, next[k].join(","));
   }
   if (next.q) sp.set("q", next.q);
