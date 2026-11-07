@@ -29,7 +29,7 @@ Als Familienmitglied möchte ich pro Portion Kalorien, Eiweiß, Fett und Kohlenh
 - [ ] BLS-Daten in D1 importiert (Skript, Quelle und Version dokumentiert)
 - [ ] Jede Zutat ist einem BLS-Eintrag zugeordnet (Vorschlag per Namenssuche, bestätigt durch Nutzer)
 - [ ] Rezeptseite: Nährwerte pro Portion, Hinweis bei unvollständiger Berechnung
-- [ ] Filter „Low Carb“ (Grenzwert pro Portion, in Spec vor dem Bau mit Marco festlegen)
+- [ ] Filter „Low Carb“: höchstens 20 g Kohlenhydrate pro Portion (mit Marco festgelegt am 07.11.2026)
 - [ ] Rechenlogik `src/lib/nutrition.ts` per TDD
 
 ## Tasks
