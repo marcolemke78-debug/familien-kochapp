@@ -59,4 +59,18 @@ Format pro Eintrag: Kontext / Entscheidung / Warum / Alternativen.
 
 ---
 
+## ADR-004 — Nährwertdaten aus dem BLS 4.0
+
+**Datum:** 07.11.2026 (Vorschlag, Speicherort mit Marco bestätigen)
+
+**Kontext:** Spec 07 braucht Nährwerte je Lebensmittel. Der Bundeslebensmittelschlüssel (BLS) war früher kostenpflichtig, Version 4.0 ist seit Dezember 2025 offen.
+
+**Lizenz (geprüft auf blsdb.de/download):** CC BY 4.0. Nutzung, Weitergabe und Bearbeitung erlaubt, auch in einem öffentlichen Repo. Pflicht: Max Rubner-Institut als Herausgeber nennen. Zitat: Max Rubner-Institut (2025): Bundeslebensmittelschlüssel (BLS), Version 4.0, Karlsruhe, DOI 10.25826/Data20251217-134202-0.
+
+**Entscheidung (Vorschlag):** Die Rohdaten (ZIP `BLS_4_0_2025_DE.zip`) kommen nicht ins Repo, damit es klein bleibt. Ein Importskript lädt die Datei, liest nur die benötigten Spalten und schreibt sie in eine D1-Tabelle. Quelle und Version stehen im Skript. Die Namensnennung erscheint in der App (Fußzeile der Nährwert-Anzeige) und in der README.
+
+**Alternativen:** Datei ins Repo (erlaubt, aber unnötig groß); Open Food Facts (Produktdaten statt Grundlebensmittel, ODbL mit Share-Alike).
+
+---
+
 <!-- Weitere ADRs hier einfügen -->

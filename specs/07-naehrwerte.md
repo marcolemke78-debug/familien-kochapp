@@ -9,7 +9,7 @@ Als Familienmitglied möchte ich pro Portion Kalorien, Eiweiß, Fett und Kohlenh
 ## Abhängigkeiten
 
 - Spec 02: Zutaten mit Menge und Einheit
-- Lizenzprüfung BLS 4.0 (Bundeslebensmittelschlüssel): Nutzung in einer privaten App mit öffentlichem Code erlaubt? Darf die Datei ins Repo oder nur in D1?
+- Lizenz BLS 4.0: CC BY 4.0, geprüft 07.11.2026 → ADR-004 in `guidelines.md` (Namensnennung Max Rubner-Institut Pflicht, Rohdaten nur in D1)
 
 ## Out of Scope
 
@@ -25,7 +25,7 @@ Als Familienmitglied möchte ich pro Portion Kalorien, Eiweiß, Fett und Kohlenh
 
 ## Akzeptanzkriterien
 
-- [ ] ADR zur BLS-Lizenz in `guidelines.md`
+- [x] ADR zur BLS-Lizenz in `guidelines.md` (ADR-004)
 - [ ] BLS-Daten in D1 importiert (Skript, Quelle und Version dokumentiert)
 - [ ] Jede Zutat ist einem BLS-Eintrag zugeordnet (Vorschlag per Namenssuche, bestätigt durch Nutzer)
 - [ ] Rezeptseite: Nährwerte pro Portion, Hinweis bei unvollständiger Berechnung
@@ -34,7 +34,7 @@ Als Familienmitglied möchte ich pro Portion Kalorien, Eiweiß, Fett und Kohlenh
 
 ## Tasks
 
-- [ ] Lizenz prüfen, ADR
+- [x] Lizenz prüfen, ADR
 - [ ] Importskript, Zuordnungs-UI, Berechnung, Anzeige
 
 ## Validation
