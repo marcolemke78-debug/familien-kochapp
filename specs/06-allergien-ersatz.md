@@ -16,6 +16,11 @@ Mit dem Knopf „Diese Zutaten besser nicht“ kann ich für ein Rezept gezielt 
 
 Die konkreten Allergene stehen **nur in D1**, eingegeben über die App. Sie stehen nicht im Code, nicht in Specs und nicht in Tests oder Seeds. Tests nutzen erfundene Allergene wie „Testallergen A“.
 
+## Entscheidungen (07.11.2026)
+
+- Person = Login (`users`). Wer ein Allergie-Profil hat, braucht einen eigenen Cloudflare-Access-Login und gibt Ersatz selbst frei. Keine Profile ohne Login.
+- `ingredients.is_raw`: Häkchen „roh“ im Rezeptformular, Standard `NULL` = unbekannt → bei `nur_roh`-Allergenen gelb. Keine KI-Schätzung.
+
 ## Out of Scope
 
 - Medizinische Beratung, Schweregrade, Notfallhinweise
