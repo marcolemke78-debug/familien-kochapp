@@ -62,5 +62,6 @@ Als Familienmitglied möchte ich pro Portion Kalorien, Eiweiß, Fett, Kohlenhydr
 
 - **Suche:** Der BLS schreibt anders als Rezepte („Hafer Flocken“, „Speisequark Magerstufe“, „Hühnerei“). Lokale Suche mit Wortteilen + Bonus für den Namensanfang bringt den richtigen Eintrag unter die ersten 20; Claude wählt daraus. Passt nichts, nennt Claude einen Suchbegriff und es gibt eine zweite Runde.
 - **Stichprobe:** Testrezept lokal von Hand nachgerechnet (266 kcal, 42,3 g KH pro Portion), stimmt mit der Anzeige überein. Low-Carb-Filter in beide Richtungen geprüft.
+- **Nachtrag 08.11.2026 (iPhone-Test):** Freigegebener Ersatz (Spec 06) zählt mit, für die ganze Familie, weil ein Topf für alle gekocht wird. Ersatz mit Menge ersetzt die Zeile, ohne Menge gilt die Original-Menge. Gilt für Karte, Zuordnungs-Fenster und Low-Carb-Filter (`applySubstitutions` in `src/lib/nutrition.ts`). Haben zwei Personen verschiedenen Ersatz für dieselbe Zutat, zählt der der Person mit der kleinsten ID.
 - **Bewusst weggelassen:** Mikronährstoffe, kcal auf den Karten der Liste, gespeichertes Ergebnis (wird immer frisch gerechnet).
 

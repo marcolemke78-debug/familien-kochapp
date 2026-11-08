@@ -22,7 +22,7 @@ import { DeleteRecipeButton } from "@/components/delete-recipe-button";
 import { formatMinutes } from "@/components/recipe-card";
 import { buttonVariants } from "@/components/ui/button";
 import { NutritionCard } from "@/components/nutrition-card";
-import { computeNutrition } from "@/lib/nutrition";
+import { applySubstitutions, computeNutrition } from "@/lib/nutrition";
 import { listMappings } from "@/lib/nutrition-store";
 
 export const metadata: Metadata = { title: "Rezept · Familienkochbuch" };
@@ -50,8 +50,9 @@ export default async function RecipePage({ params, searchParams }: PageProps<"/r
     listFamilyNames(),
     listMappings(),
   ]);
-  // Spec 07: Nährwerte frisch aus Zutaten und Zuordnungen
-  const nutrition = computeNutrition(recipe.ingredients, nutritionMappings, recipe.servings);
+  // Spec 07: Nährwerte frisch aus Zutaten und Zuordnungen, freigegebener Ersatz gilt für den ganzen Topf
+  const withSubstitutes = applySubstitutions(recipe.ingredients, approved);
+  const nutrition = computeNutrition(withSubstitutes.ingredients, nutritionMappings, recipe.servings);
   const marks = rules.length > 0 || approved.length > 0 ? markIngredients(recipe.ingredients, rules, approved, names) : [];
   // Für "Diese Zutaten besser nicht": eigene Treffer vorauswählen, eigenen Ersatz anzeigen
   const myRules = rules.filter((r) => r.userId === user.id);
@@ -181,7 +182,7 @@ export default async function RecipePage({ params, searchParams }: PageProps<"/r
             <SubstituteSheet recipeId={recipe.id} ingredients={substituteIngredients} />
           </div>
           <div className="mt-6">
-            <NutritionCard recipeId={recipe.id} result={nutrition} />
+            <NutritionCard recipeId={recipe.id} result={nutrition} replaced={withSubstitutes.replaced} />
           </div>
         </div>
 

@@ -1,7 +1,7 @@
 // Spec 07: Nährwerte pro Portion. Reine Logik ohne Datenbank.
 // Werte je 100 g kommen aus dem BLS 4.0 (Max Rubner-Institut, CC BY 4.0), die Zuordnung aus ingredient_nutrition.
-import { ingredientKey, termForms, tokenize } from "./allergens";
-import type { Ingredient } from "./ingredients";
+import { ingredientKey, termForms, tokenize, type ApprovedSubstitution } from "./allergens";
+import { parseIngredientLine, type Ingredient } from "./ingredients";
 
 export type NutrientValues = { kcal: number; protein: number; fat: number; carbs: number; sugar: number };
 
@@ -68,6 +68,37 @@ export function computeNutrition(ingredients: Ingredient[], mappings: Map<string
   const portions = servings > 0 ? servings : 1;
   const perServing = Object.fromEntries(NUTRIENTS.map((n) => [n, round1(total[n] / portions)])) as NutrientValues;
   return { perServing, missing, complete: counted > 0 && missing.length === 0, mapped };
+}
+
+/**
+ * Freigegebenen Ersatz einrechnen: Gekocht wird ein Topf für alle, also gilt der Ersatz für das ganze Rezept.
+ * Ersatz mit Menge ("150 g Joghurt") ersetzt die Zeile, Ersatz ohne Menge übernimmt Menge und Einheit des Originals.
+ * Haben mehrere Personen verschiedenen Ersatz für dieselbe Zutat, zählt der mit der kleinsten Personen-ID.
+ */
+export function applySubstitutions(
+  ingredients: Ingredient[],
+  approved: ApprovedSubstitution[],
+): { ingredients: Ingredient[]; replaced: { from: string; to: string }[] } {
+  const byKey = new Map<string, ApprovedSubstitution>();
+  for (const s of [...approved].sort((a, b) => a.userId - b.userId)) {
+    if (!byKey.has(s.ingredientKey)) byKey.set(s.ingredientKey, s);
+  }
+  const replaced: { from: string; to: string }[] = [];
+  const seen = new Set<string>();
+  const result = ingredients.map((ing) => {
+    if (ing.heading) return ing;
+    const key = ingredientKey(ing.name);
+    const sub = byKey.get(key);
+    if (!sub) return ing;
+    if (!seen.has(key)) {
+      seen.add(key);
+      replaced.push({ from: ing.name, to: sub.replacement });
+    }
+    const parsed = parseIngredientLine(sub.replacement);
+    if (parsed.quantity === null) return { quantity: ing.quantity, quantityMax: ing.quantityMax, unit: ing.unit, name: parsed.name };
+    return { quantity: parsed.quantity, quantityMax: parsed.quantityMax, unit: parsed.unit, name: parsed.name };
+  });
+  return { ingredients: result, replaced };
 }
 
 export function isLowCarb(result: NutritionResult): boolean {

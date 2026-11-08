@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeNutrition, ingredientGrams, isLowCarb, rankCandidates, searchFragments, unitKey, type NutritionMapping } from "./nutrition";
+import { applySubstitutions, computeNutrition, ingredientGrams, isLowCarb, rankCandidates, searchFragments, unitKey, type NutritionMapping } from "./nutrition";
 import type { Ingredient } from "./ingredients";
 
 // Nur erfundene Lebensmittel (siehe CLAUDE.md, Datenschutz)
@@ -133,5 +133,37 @@ describe("rankCandidates", () => {
     ];
     expect(rankCandidates("Zorbelplimme", rows)[0].code).toBe("B");
     expect(rankCandidates("Quimben", rows)[0].code).toBe("D");
+  });
+});
+
+describe("applySubstitutions", () => {
+  const sub = (ingredientKey: string, replacement: string, userId = 1) => ({ ingredientKey, userId, replacement });
+
+  it("ersetzt die Zeile durch den freigegebenen Ersatz mit eigener Menge", () => {
+    const { ingredients, replaced } = applySubstitutions([ing(2, null, "Zorbeln"), ing(100, "g", "Quimben")], [sub("zorbeln", "150 g Plimme")]);
+    expect(ingredients).toEqual([ing(150, "g", "Plimme"), ing(100, "g", "Quimben")]);
+    expect(replaced).toEqual([{ from: "Zorbeln", to: "150 g Plimme" }]);
+  });
+
+  it("Ersatz ohne Menge übernimmt Menge und Einheit des Originals", () => {
+    const { ingredients } = applySubstitutions([ing(2, "EL", "Zorbelmus", 3)], [sub("zorbelmus", "Plimmenmus")]);
+    expect(ingredients).toEqual([ing(2, "EL", "Plimmenmus", 3)]);
+  });
+
+  it("Überschriften und Zutaten ohne Ersatz bleiben unverändert", () => {
+    const heading: Ingredient = { quantity: null, quantityMax: null, unit: null, name: "Für den Teig", heading: true };
+    const list = [heading, ing(1, null, "Quimbe")];
+    expect(applySubstitutions(list, [sub("zorbeln", "Plimme")])).toEqual({ ingredients: list, replaced: [] });
+  });
+
+  it("mehrere Personen mit verschiedenem Ersatz: der Ersatz der Person mit der kleinsten ID zählt", () => {
+    const { ingredients } = applySubstitutions([ing(2, null, "Zorbeln")], [sub("zorbeln", "3 Quimben", 7), sub("zorbeln", "1 Plimme", 2)]);
+    expect(ingredients).toEqual([ing(1, null, "Plimme")]);
+  });
+
+  it("gleiche Zutat zweimal im Rezept wird beide Male ersetzt, aber nur einmal genannt", () => {
+    const { ingredients, replaced } = applySubstitutions([ing(1, null, "Zorbel"), ing(2, null, "Zorbel")], [sub("zorbel", "Plimme")]);
+    expect(ingredients.map((i) => i.name)).toEqual(["Plimme", "Plimme"]);
+    expect(replaced).toHaveLength(1);
   });
 });

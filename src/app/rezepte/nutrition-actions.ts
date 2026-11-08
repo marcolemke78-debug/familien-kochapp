@@ -7,7 +7,8 @@ import { getCurrentUser } from "@/lib/auth";
 import { getRecipe } from "@/lib/recipes";
 import { formatIngredient, type Ingredient } from "@/lib/ingredients";
 import { ingredientKey } from "@/lib/allergens";
-import { unitKey } from "@/lib/nutrition";
+import { applySubstitutions, unitKey } from "@/lib/nutrition";
+import { listApprovedSubstitutions } from "@/lib/allergen-store";
 import { MAX_GRAMS_PER_UNIT, type Match, type MatchItem } from "@/lib/nutrition-match";
 import { existingCodes, listMappings, saveMappings, searchBls } from "@/lib/nutrition-store";
 import { matchWithClaude } from "@/lib/nutrition-claude";
@@ -44,17 +45,23 @@ function neededUnits(lines: Ingredient[]): { units: string[]; labels: Record<str
   return { units: Object.keys(labels), labels };
 }
 
+/** Zutaten so, wie gekocht wird: mit freigegebenem Ersatz (gleiche Rechnung wie auf der Rezeptseite) */
+async function ingredientsWithSubstitutes(recipeId: number): Promise<Ingredient[] | null> {
+  const [recipe, approved] = await Promise.all([getRecipe(recipeId), listApprovedSubstitutions(recipeId)]);
+  return recipe ? applySubstitutions(recipe.ingredients, approved).ingredients : null;
+}
+
 export async function prepareNutrition(recipeId: number): Promise<PrepareResult> {
   if (!(await getCurrentUser())) return { ok: false, error: NOT_LOGGED_IN };
   if (!recipeIdSchema.safeParse(recipeId).success) return { ok: false, error: "Ungültige Angabe." };
 
   try {
-    const [recipe, mappings] = await Promise.all([getRecipe(recipeId), listMappings()]);
-    if (!recipe) return { ok: false, error: "Dieses Rezept gibt es nicht mehr." };
+    const [ingredients, mappings] = await Promise.all([ingredientsWithSubstitutes(recipeId), listMappings()]);
+    if (!ingredients) return { ok: false, error: "Dieses Rezept gibt es nicht mehr." };
 
     // Zeilen je Zutatenname bündeln
     const groups = new Map<string, Ingredient[]>();
-    for (const ing of recipe.ingredients) {
+    for (const ing of ingredients) {
       if (ing.heading) continue;
       const key = ingredientKey(ing.name);
       if (!key) continue;
@@ -185,9 +192,9 @@ export async function saveNutrition(recipeId: number, input: unknown): Promise<{
   }
 
   try {
-    const [recipe, mappings] = await Promise.all([getRecipe(recipeId), listMappings()]);
-    if (!recipe) return { message: "Dieses Rezept gibt es nicht mehr." };
-    const keys = new Set(recipe.ingredients.filter((i) => !i.heading).map((i) => ingredientKey(i.name)));
+    const [ingredients, mappings] = await Promise.all([ingredientsWithSubstitutes(recipeId), listMappings()]);
+    if (!ingredients) return { message: "Dieses Rezept gibt es nicht mehr." };
+    const keys = new Set(ingredients.filter((i) => !i.heading).map((i) => ingredientKey(i.name)));
     // Nur Zutaten dieses Rezepts, nur mit Eintrag oder "nicht mitrechnen"
     const entries = parsed.data.filter((e) => keys.has(e.key) && (e.skip || e.code));
     const codes = await existingCodes(entries.flatMap((e) => (e.code && !e.skip ? [e.code] : [])));

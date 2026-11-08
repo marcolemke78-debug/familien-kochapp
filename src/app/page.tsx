@@ -9,7 +9,7 @@ import { RecipeCard } from "@/components/recipe-card";
 import { familySuitability, type Suitability } from "@/lib/allergens";
 import { listAllergenData, listRules } from "@/lib/allergen-store";
 import { buttonVariants } from "@/components/ui/button";
-import { computeNutrition, isLowCarb } from "@/lib/nutrition";
+import { applySubstitutions, computeNutrition, isLowCarb } from "@/lib/nutrition";
 import { listIngredientsForNutrition, listMappings } from "@/lib/nutrition-store";
 
 export default async function HomePage({ searchParams }: PageProps<"/">) {
@@ -19,16 +19,21 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
   const filters = parseFilters(await searchParams);
   const filtered = hasFilters(filters);
   const [all, rules] = await Promise.all([listRecipes(filters), listRules()]);
+  const lowCarb = filters.nutrition.includes("lowcarb");
+  // Freigegebener Ersatz: für die Badges (Spec 06) und für Low Carb (gilt für den ganzen Topf)
+  const data = rules.length > 0 || lowCarb ? await listAllergenData() : null;
   // Spec 07: Low Carb wird berechnet, nicht in SQL gefiltert
   let recipes = all;
-  if (filters.nutrition.includes("lowcarb")) {
+  if (lowCarb) {
     const [ingredients, mappings] = await Promise.all([listIngredientsForNutrition(), listMappings()]);
-    recipes = all.filter((r) => isLowCarb(computeNutrition(ingredients.get(r.id) ?? [], mappings, r.servings)));
+    recipes = all.filter((r) => {
+      const cooked = applySubstitutions(ingredients.get(r.id) ?? [], data?.approved.get(r.id) ?? []).ingredients;
+      return isLowCarb(computeNutrition(cooked, mappings, r.servings));
+    });
   }
   // Spec 06: Badge nur, wenn jemand in der Familie Allergien eingetragen hat
   const suitability = new Map<number, Suitability>();
-  if (rules.length > 0) {
-    const data = await listAllergenData();
+  if (data && rules.length > 0) {
     for (const r of recipes) suitability.set(r.id, familySuitability(data.ingredients.get(r.id) ?? [], rules, data.approved.get(r.id) ?? []));
   }
   // Ganz leeres Kochbuch (nicht nur "kein Treffer") -> Willkommens-Leerzustand ohne Filter

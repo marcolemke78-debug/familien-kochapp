@@ -5,7 +5,15 @@ import { LOW_CARB_MAX_CARBS, type NutritionResult } from "@/lib/nutrition";
 
 const fmt = (n: number) => n.toLocaleString("de-DE", { maximumFractionDigits: n < 10 ? 1 : 0 });
 
-export function NutritionCard({ recipeId, result }: { recipeId: number; result: NutritionResult }) {
+export function NutritionCard({
+  recipeId,
+  result,
+  replaced,
+}: {
+  recipeId: number;
+  result: NutritionResult;
+  replaced: { from: string; to: string }[];
+}) {
   if (result.mapped === 0) {
     return (
       <section aria-labelledby="naehrwerte" className="space-y-3 rounded-[1.25rem] border border-border bg-card p-4">
@@ -47,6 +55,9 @@ export function NutritionCard({ recipeId, result }: { recipeId: number; result: 
           </div>
         ))}
       </dl>
+      {replaced.length > 0 && (
+        <p className="text-sm text-muted-foreground">Mit Ersatz gerechnet: {replaced.map((r) => `${r.from} → ${r.to}`).join(", ")}</p>
+      )}
       {!result.complete && (
         <p className="flex items-start gap-2 rounded-2xl bg-amber-500/15 p-3 text-sm font-medium text-amber-800 dark:text-amber-300">
           <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
