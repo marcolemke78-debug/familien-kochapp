@@ -1,6 +1,6 @@
 # 08 — Einkaufsliste über Bring
 
-**Status:** 🔨 In Arbeit (live testen)
+**Status:** ✅ Fertig
 
 ## Ziel
 
@@ -27,7 +27,7 @@ Als Familienmitglied möchte ich die Zutaten eines Rezepts (in der gewählten Po
 - [x] Ergebnis der Bring-Prüfung als ADR in `guidelines.md` (ADR-005)
 - [x] Knopf „Zu Bring“ auf der Rezeptseite, überträgt die aktuelle Portionenzahl
 - [x] Funktioniert auf iPhone (Bring-App öffnet sich, getestet 08.11.2026)
-- [ ] … und am Mac (Web)
+- [x] … und am Mac (Web), getestet 08.11.2026
 - [x] Fallback „Liste teilen“ vorhanden
 
 ## Tasks
@@ -36,7 +36,7 @@ Als Familienmitglied möchte ich die Zutaten eines Rezepts (in der gewählten Po
 - [x] Umsetzung gemäß ADR: `src/lib/bring.ts` (TDD), Migration `0007_bring_exports.sql`, Route `/bring/[token]`, `bring-actions.ts`, `bring-buttons.tsx`
 - [x] Cloudflare Access: eigene Anwendung `…workers.dev/bring/` mit Policy „Bring-Export ohne Login“ (Bypass, Everyone), geprüft: nur `/bring/…` offen
 - [x] Live-Test auf dem iPhone mit Marcos Bring-Liste
-- [ ] Live-Test am Mac
+- [x] Live-Test am Mac
 
 ## Validation
 
