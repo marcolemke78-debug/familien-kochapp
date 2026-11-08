@@ -11,6 +11,8 @@ import { DEVICES, type Device } from "@/lib/recipe-meta";
 import { formatIngredient } from "@/lib/ingredients";
 import { checkStep, variantInputSchema, type Variant } from "@/lib/convert";
 import { convertWithClaude } from "@/lib/convert-claude";
+import { checkComboStep, comboInputSchema, usesBothDevices, type Combo } from "@/lib/combo";
+import { planComboWithClaude } from "@/lib/combo-claude";
 
 export type SaveState = {
   message?: string;
@@ -179,4 +181,67 @@ export async function saveVariant(recipeId: number, device: Device, input: unkno
   revalidatePath(`/rezepte/${recipeId}`);
   revalidatePath("/");
   redirect(`/rezepte/${recipeId}?geraet=${device}`, RedirectType.replace);
+}
+
+// --- TM6 und Heißluft zusammen (Spec 10) -------------------------------------
+
+export type ComboResult = { ok: true; combo: Combo } | { ok: false; error: string };
+
+// Liefert nur eine Vorschau, speichert nichts
+export async function planCombo(recipeId: number): Promise<ComboResult> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: NOT_LOGGED_IN };
+  if (!recipeIdSchema.safeParse(recipeId).success) return { ok: false, error: "Unbekanntes Rezept." };
+
+  try {
+    const recipe = await recipes.getRecipe(recipeId);
+    if (!recipe) return { ok: false, error: "Dieses Rezept gibt es nicht mehr." };
+    return await planComboWithClaude({
+      title: recipe.title,
+      servings: recipe.servings,
+      ingredients: recipe.ingredients.map(formatIngredient),
+      steps: recipe.steps,
+    });
+  } catch {
+    return { ok: false, error: "Die Planung hat nicht geklappt. Bitte versuch es noch einmal." };
+  }
+}
+
+// replaceTested: ausdrücklich bestätigt, dass eine getestete Kombi ersetzt werden darf
+export async function saveCombo(recipeId: number, input: unknown, replaceTested: boolean): Promise<{ message: string } | void> {
+  const user = await getCurrentUser();
+  if (!user) return { message: NOT_LOGGED_IN };
+  if (!recipeIdSchema.safeParse(recipeId).success) return { message: "Unbekanntes Rezept." };
+
+  const parsed = comboInputSchema.safeParse(input);
+  if (!parsed.success) return { message: "Bitte prüfe die Angaben: Nutzen und jeder Schritt brauchen einen Text." };
+  // Erster Schritt kann nicht "gleichzeitig" sein
+  const combo: Combo = { ...parsed.data, steps: parsed.data.steps.map((s, i) => (i === 0 ? { ...s, parallel: false } : s)) };
+  if (combo.steps.some((step) => checkComboStep(step).errors.length > 0)) {
+    return { message: "Einige Einstellungen passen nicht. Bitte die rot markierten Werte ändern." };
+  }
+  if (!usesBothDevices(combo.steps)) return { message: "Mindestens ein Schritt braucht den TM6 und einer die Heißluft." };
+
+  try {
+    const status = await recipes.getComboStatus(recipeId);
+    if (status === "getestet" && !replaceTested) return { message: "Die getestete Version wird nur nach Bestätigung ersetzt." };
+    if (!(await recipes.getPhotoKey(recipeId)).exists) return { message: "Dieses Rezept gibt es nicht mehr." };
+    await recipes.saveCombo(recipeId, combo);
+  } catch {
+    return { message: "Speichern hat nicht geklappt. Bitte versuch es noch einmal." };
+  }
+  revalidatePath(`/rezepte/${recipeId}`);
+  redirect(`/rezepte/${recipeId}?geraet=beide`, RedirectType.replace);
+}
+
+export async function markComboTested(recipeId: number): Promise<{ message: string } | void> {
+  const user = await getCurrentUser();
+  if (!user) return { message: NOT_LOGGED_IN };
+  if (!recipeIdSchema.safeParse(recipeId).success) return { message: "Unbekanntes Rezept." };
+  try {
+    await recipes.markComboTested(recipeId);
+  } catch {
+    return { message: "Das hat nicht geklappt. Bitte versuch es noch einmal." };
+  }
+  revalidatePath(`/rezepte/${recipeId}`);
 }

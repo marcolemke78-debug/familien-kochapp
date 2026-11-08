@@ -5,6 +5,7 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import type { Ingredient } from "./ingredients";
 import type { Variant, VariantStep } from "./convert";
+import type { Combo } from "./combo";
 import type { RecipeInput } from "./recipe-input";
 import { DEVICES, type Device, type DeviceStatus, type Tag } from "./recipe-meta";
 import { buildFilterSql, EMPTY_FILTERS, type Filters } from "./recipe-query";
@@ -267,4 +268,63 @@ export async function saveVariant(id: number, device: Device, variant: Variant):
       )
       .bind(id, device, JSON.stringify(variant.steps)),
   ]);
+}
+
+// --- TM6 und Heißluft zusammen (Spec 10) -------------------------------------
+
+export type ComboPlan = Combo & { status: "ki" | "getestet"; convertedAt: string };
+
+export async function getCombo(id: number): Promise<ComboPlan | null> {
+  const database = await db();
+  const [plan, steps] = await database.batch([
+    database.prepare(`SELECT status, benefit, converted_at FROM combo_plans WHERE recipe_id = ?1`).bind(id),
+    database.prepare(`SELECT text, device, settings, parallel FROM combo_steps WHERE recipe_id = ?1 ORDER BY position`).bind(id),
+  ]);
+  const p = (plan.results as { status: "ki" | "getestet"; benefit: string; converted_at: string }[])[0];
+  if (!p) return null;
+  return {
+    status: p.status,
+    benefit: p.benefit,
+    convertedAt: p.converted_at,
+    steps: (steps.results as { text: string; device: Device | null; settings: string | null; parallel: number }[]).map((s) => ({
+      text: s.text,
+      device: s.device,
+      settings: s.settings ? JSON.parse(s.settings) : null,
+      parallel: s.parallel === 1,
+    })),
+  };
+}
+
+export async function getComboStatus(id: number): Promise<"ki" | "getestet" | null> {
+  const row = await (await db()).prepare(`SELECT status FROM combo_plans WHERE recipe_id = ?1`).bind(id).first<{ status: "ki" | "getestet" }>();
+  return row?.status ?? null;
+}
+
+// Speichert die Kombi in EINER Transaktion: Status "ki", Nutzen, Zeitpunkt, Schritte neu.
+// Ob überschrieben werden darf, prüft die Server Action vorher (getComboStatus).
+export async function saveCombo(id: number, combo: Combo): Promise<void> {
+  const database = await db();
+  await database.batch([
+    database
+      .prepare(
+        `INSERT INTO combo_plans (recipe_id, status, benefit, converted_at) VALUES (?1, 'ki', ?2, datetime('now'))
+         ON CONFLICT (recipe_id) DO UPDATE SET status = 'ki', benefit = excluded.benefit, converted_at = excluded.converted_at`,
+      )
+      .bind(id, combo.benefit),
+    database.prepare(`DELETE FROM combo_steps WHERE recipe_id = ?1`).bind(id),
+    database
+      .prepare(
+        // json_extract liefert true/false als 1/0
+        `INSERT INTO combo_steps (recipe_id, position, text, device, settings, parallel)
+         SELECT ?1, j.key, json_extract(j.value, '$.text'), json_extract(j.value, '$.device'),
+                json_extract(j.value, '$.settings'), json_extract(j.value, '$.parallel')
+         FROM json_each(?2) j`,
+      )
+      .bind(id, JSON.stringify(combo.steps)),
+  ]);
+}
+
+export async function markComboTested(id: number): Promise<boolean> {
+  const result = await (await db()).prepare(`UPDATE combo_plans SET status = 'getestet' WHERE recipe_id = ?1`).bind(id).run();
+  return result.meta.changes > 0;
 }

@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AlertTriangle, ArrowLeft, Clock, ExternalLink, Pencil } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowLeftRight, BadgeCheck, Clock, CookingPot, ExternalLink, Fan, Pencil, Sparkles } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
-import { getRecipe, getVariantSteps } from "@/lib/recipes";
+import { getCombo, getRecipe, getVariantSteps } from "@/lib/recipes";
 import { DEVICES, tagLabel } from "@/lib/recipe-meta";
 import { formatSettings } from "@/lib/convert";
 import { DeviceConverter } from "@/components/device-converter";
+import { ComboConverter } from "@/components/combo-converter";
 import { cn } from "@/lib/utils";
 import { parseRecipeId } from "@/lib/recipe-input";
 import { NoAccess } from "@/components/no-access";
@@ -40,9 +41,13 @@ export default async function RecipePage({ params, searchParams }: PageProps<"/r
   const variants = recipe.devices.filter((d) => d.convertedAt);
   const active = variants.find((d) => d.device === requested) ?? null;
   const activeSteps = active ? await getVariantSteps(recipe.id, active.device) : null;
-  const activeLabel = active ? DEVICES.find((d) => d.value === active.device)?.label : null;
+  // Spec 10: Kombi TM6 + Heißluft (?geraet=beide)
+  const combo = await getCombo(recipe.id);
+  const showCombo = requested === "beide" && combo !== null;
+  const activeLabel = showCombo ? "TM6 und Heißluft" : active ? DEVICES.find((d) => d.value === active.device)?.label : null;
   // Beide Zeitstempel sind "JJJJ-MM-TT HH:MM:SS" aus SQLite, darum als Text vergleichbar
-  const originalChanged = !!active?.convertedAt && recipe.updatedAt > active.convertedAt;
+  const convertedAt = showCombo ? combo.convertedAt : active?.convertedAt;
+  const originalChanged = !!convertedAt && recipe.updatedAt > convertedAt;
   // Spec 06: Allergie-Markierungen der ganzen Familie
   const [rules, approved, names, nutritionMappings] = await Promise.all([
     listRules(),
@@ -134,20 +139,20 @@ export default async function RecipePage({ params, searchParams }: PageProps<"/r
       )}
 
       {/* KI-Umrechnung: neue Geräte-Versionen und "neu umrechnen" für vorhandene KI-Versionen */}
-      {(convertible.length > 0 || variants.length > 0) && (
-        <section aria-label="Mit KI umrechnen" className="mt-4 flex flex-wrap gap-3">
-          {convertible.map((d) => (
-            <DeviceConverter key={d.value} recipeId={recipe.id} device={d.value} />
-          ))}
-          {variants.map((d) => (
-            <DeviceConverter key={d.device} recipeId={recipe.id} device={d.device} again tested={d.status === "getestet"} />
-          ))}
-        </section>
-      )}
+      {/* Die Kombi (Spec 10) geht immer, darum gibt es diesen Bereich bei jedem Rezept */}
+      <section aria-label="Mit KI umrechnen" className="mt-4 flex flex-wrap gap-3">
+        {convertible.map((d) => (
+          <DeviceConverter key={d.value} recipeId={recipe.id} device={d.value} />
+        ))}
+        {variants.map((d) => (
+          <DeviceConverter key={d.device} recipeId={recipe.id} device={d.device} again tested={d.status === "getestet"} />
+        ))}
+        <ComboConverter recipeId={recipe.id} again={combo !== null} tested={combo?.status === "getestet"} />
+      </section>
 
-      {variants.length > 0 && (
+      {(variants.length > 0 || combo) && (
         <nav aria-label="Version wählen" className="mt-10 flex flex-wrap gap-2">
-          {[{ href: `/rezepte/${recipe.id}`, label: "Original", current: !active }]
+          {[{ href: `/rezepte/${recipe.id}`, label: "Original", current: !active && !showCombo }]
             .concat(
               variants.map((d) => ({
                 href: `/rezepte/${recipe.id}?geraet=${d.device}`,
@@ -155,6 +160,7 @@ export default async function RecipePage({ params, searchParams }: PageProps<"/r
                 current: active?.device === d.device,
               })),
             )
+            .concat(combo ? [{ href: `/rezepte/${recipe.id}?geraet=beide`, label: "Beide", current: showCombo }] : [])
             .map((tab) => (
               <Link
                 key={tab.href}
@@ -175,7 +181,13 @@ export default async function RecipePage({ params, searchParams }: PageProps<"/r
         </nav>
       )}
 
-      <div className={cn("grid gap-10", variants.length > 0 ? "mt-6" : "mt-10", "lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-12")}>
+      <div
+        className={cn(
+          "grid gap-10",
+          variants.length > 0 || combo ? "mt-6" : "mt-10",
+          "lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-12",
+        )}
+      >
         <div className="lg:sticky lg:top-24 lg:self-start">
           <ScaledIngredients
             ingredients={recipe.ingredients}
@@ -196,7 +208,33 @@ export default async function RecipePage({ params, searchParams }: PageProps<"/r
             <h2 id="zubereitung" className="text-2xl font-semibold tracking-tight">
               {activeLabel ? `Zubereitung mit ${activeLabel}` : "Zubereitung"}
             </h2>
-            {active && <DeviceBadge device={active.device} status={active.status} showStatus className="shadow-none" />}
+            {active && !showCombo && <DeviceBadge device={active.device} status={active.status} showStatus className="shadow-none" />}
+            {showCombo && (
+              <div className="space-y-3">
+                <span className="inline-flex flex-wrap items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-sm font-semibold">
+                  <CookingPot className="size-4 text-primary" aria-hidden />
+                  TM6 +
+                  <Fan className="size-4 text-primary" aria-hidden />
+                  Heißluft
+                  <span
+                    className={cn(
+                      "inline-flex items-center gap-1 font-medium",
+                      combo.status === "getestet" ? "text-[#1f7a4d] dark:text-[#6fd3a0]" : "text-muted-foreground",
+                    )}
+                  >
+                    <span aria-hidden>·</span>
+                    {combo.status === "getestet" ? (
+                      <BadgeCheck className="size-4" aria-hidden />
+                    ) : (
+                      <Sparkles className="size-4" aria-hidden />
+                    )}
+                    {combo.status === "getestet" ? "getestet" : "von KI geplant"}
+                  </span>
+                </span>
+                <p className="text-lg font-medium">{combo.benefit}</p>
+                {combo.status !== "getestet" && <MarkTestedButton recipeId={recipe.id} device="beide" />}
+              </div>
+            )}
             {originalChanged && (
               <p className="flex items-start gap-2 rounded-2xl border border-[#8a5a00]/30 bg-[#f0c060]/15 p-3 text-sm font-medium text-[#8a5a00] dark:text-[#f0c060]">
                 <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
@@ -204,7 +242,39 @@ export default async function RecipePage({ params, searchParams }: PageProps<"/r
               </p>
             )}
           </div>
-          {activeSteps && active ? (
+          {showCombo ? (
+            <ol className="space-y-6">
+              {combo.steps.map((step, index) => (
+                <li key={index} className="flex gap-4">
+                  <span
+                    aria-hidden
+                    className="flex size-11 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-brand to-brand-deep text-lg font-semibold text-primary-foreground"
+                  >
+                    {index + 1}
+                  </span>
+                  <div className="space-y-2 pt-1.5">
+                    {step.parallel && (
+                      <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary">
+                        <ArrowLeftRight className="size-4" aria-hidden />
+                        Währenddessen
+                      </p>
+                    )}
+                    {step.device && (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <DeviceBadge device={step.device} status="ki" className="shadow-none" />
+                        {step.settings && (
+                          <span className="inline-flex rounded-xl bg-secondary px-3 py-1 text-base font-semibold tabular-nums">
+                            {formatSettings(step.device, step.settings)}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    <p className="text-xl leading-relaxed whitespace-pre-line">{step.text}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          ) : activeSteps && active ? (
             <ol className="space-y-6">
               {activeSteps.map((step, index) => (
                 <li key={index} className="flex gap-4">

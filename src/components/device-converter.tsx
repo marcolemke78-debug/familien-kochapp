@@ -42,7 +42,7 @@ function speedOption(speed: string) {
   return `Stufe ${speed.replace(".", ",")}`;
 }
 
-const DEFAULTS: Record<Device, Tm6Settings | AirfryerSettings> = {
+export const DEFAULTS: Record<Device, Tm6Settings | AirfryerSettings> = {
   tm6: { seconds: 60, temperature: null, varoma: false, speed: "1", reverse: false },
   airfryer: { program: "air_fry", zone: "megazone", temperature: 180, minutes: 10 },
 };
@@ -255,7 +255,7 @@ function Field({ label, htmlFor, children, className }: { label: string; htmlFor
   );
 }
 
-function Tm6Fields({ index, settings, onChange }: { index: number; settings: Tm6Settings; onChange: (s: Tm6Settings) => void }) {
+export function Tm6Fields({ index, settings, onChange }: { index: number | string; settings: Tm6Settings; onChange: (s: Tm6Settings) => void }) {
   // Zeit als Text ("1:30"), damit auch Sekunden bequem gehen; ungültige Eingabe bleibt sichtbar stehen
   const [timeText, setTimeText] = useState(settings.seconds === null ? "" : formatTm6Time(settings.seconds));
   const timeInvalid = timeText.trim() !== "" && parseTm6Time(timeText) === null;
@@ -326,12 +326,12 @@ function Tm6Fields({ index, settings, onChange }: { index: number; settings: Tm6
   );
 }
 
-function AirfryerFields({
+export function AirfryerFields({
   index,
   settings,
   onChange,
 }: {
-  index: number;
+  index: number | string; // Teil der Feld-IDs, muss auf der Seite eindeutig sein
   settings: AirfryerSettings;
   onChange: (s: AirfryerSettings) => void;
 }) {

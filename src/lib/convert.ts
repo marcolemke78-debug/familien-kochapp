@@ -143,7 +143,7 @@ export function checkStep(device: Device, settings: Tm6Settings | AirfryerSettin
 
 // --- Schemas -------------------------------------------------------------
 
-const tm6Schema = z.object({
+export const tm6Schema = z.object({
   seconds: z.number().int().nullable(),
   temperature: z.number().int().nullable(),
   varoma: z.boolean(),
@@ -151,7 +151,7 @@ const tm6Schema = z.object({
   reverse: z.boolean(),
 });
 
-const airfryerSchema = z.object({
+export const airfryerSchema = z.object({
   program: z.enum(AIRFRYER_PROGRAMS.map((p) => p.value) as [Program, ...Program[]]),
   zone: z.enum(AIRFRYER_ZONES.map((p) => p.value) as [Zone, ...Zone[]]),
   temperature: z.number().int(),
@@ -197,7 +197,7 @@ export function toVariant(output: ConvertOutput): { ok: true; variant: Variant }
 
 // --- Prompt --------------------------------------------------------------
 
-const DEVICE_RULES: Record<Device, string> = {
+export const DEVICE_RULES: Record<Device, string> = {
   tm6: `Gerät: Thermomix TM6 (Mixtopf 2,2 Liter).
 - settings je Schritt: seconds (Zeit in Sekunden), temperature (37–120 °C oder null), varoma (true statt Temperatur beim Dampfgaren und starkem Anbraten), speed ("sanft" = Sanftrührstufe, "0.5" bis "10" in halben Schritten, "teig" = Teigknetstufe, "turbo"), reverse (Linkslauf, z. B. damit Stücke ganz bleiben).
 - Typisch: Zwiebeln hacken 5 Sek. Stufe 5; Andünsten 3 Min. 120 °C Stufe 1; Kochen mit Linkslauf und Sanftrührstufe; Teig 2 Min. Teigknetstufe.

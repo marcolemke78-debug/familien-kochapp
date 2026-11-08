@@ -22,3 +22,4 @@ Arbeitspaket-Tabelle. Wird in Phase 3 befüllt (eine Zeile pro Feature-Spec).
 | 07 | Nährwerte pro Portion (BLS 4.0) | `specs/07-naehrwerte.md` | 02, Lizenz | ✅ |
 | 08 | Einkaufsliste über Bring | `specs/08-bring.md` | 02 | ✅ |
 | 09 | Wochenplan | `specs/09-wochenplan.md` | 02, 08 | ⏸ zurückgestellt |
+| 10 | TM6 und Heißluft zusammen | `specs/10-geraete-kombi.md` | 05 | 🚧 iPhone-Test offen |

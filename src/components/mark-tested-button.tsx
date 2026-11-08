@@ -1,12 +1,12 @@
 "use client";
-// "Als getestet markieren" je Gerät: setzt den Status auf "getestet". Das Gerät steht schon auf dem Badge darüber.
+// "Als getestet markieren" je Gerät oder für die Kombi (Spec 10): setzt den Status auf "getestet".
 import { useState, useTransition } from "react";
 import { BadgeCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { markDeviceTested } from "@/app/rezepte/actions";
+import { markComboTested, markDeviceTested } from "@/app/rezepte/actions";
 import type { Device } from "@/lib/recipe-meta";
 
-export function MarkTestedButton({ recipeId, device }: { recipeId: number; device: Device }) {
+export function MarkTestedButton({ recipeId, device }: { recipeId: number; device: Device | "beide" }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -18,7 +18,7 @@ export function MarkTestedButton({ recipeId, device }: { recipeId: number; devic
         disabled={pending}
         onClick={() =>
           startTransition(async () => {
-            const result = await markDeviceTested(recipeId, device);
+            const result = device === "beide" ? await markComboTested(recipeId) : await markDeviceTested(recipeId, device);
             setError(result?.message ?? null);
           })
         }
