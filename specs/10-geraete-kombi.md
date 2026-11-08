@@ -1,6 +1,6 @@
 # 10 — TM6 und Heißluft zusammen
 
-**Status:** 🚧 In Arbeit
+**Status:** ✅ Fertig
 
 ## Ziel
 
@@ -56,4 +56,4 @@ Egal, ob das Rezept aus Cookidoo, einem Foto-Import oder von Hand stammt. Die KI
 
 - 08.11.: Lokal mit erfundenem Rezept (Knolli-Ecken + Blubbersoße) getestet: Claude plant Heißluft (Air Fry, MegaZone, 200 °C, 25 Min.) und startet den TM6 so, dass beides gleichzeitig fertig ist. Vorschau → Speichern → Ansicht „Beide“ → „Als getestet markieren“ geklappt, Löschen des Rezepts entfernt die Kombi mit. Screenshots 390 und 1280 px geprüft.
 - „Gleichzeitig mit Schritt N“ war missverständlich (TM6-Schritt 5 läuft parallel zur Heißluft aus Schritt 3, nicht zu Schritt 4) → Anzeige heißt jetzt „Währenddessen“.
-- Offen: echter Kochtest durch Marco auf dem iPhone.
+- 08.11.: Echter Kochtest durch Marco auf dem iPhone erfolgreich.
