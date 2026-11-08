@@ -50,6 +50,20 @@ describe("parseIngredientLine", () => {
     expect(parseIngredientLine("  etwas Öl  ")).toEqual({ quantity: null, quantityMax: null, unit: null, name: "etwas Öl" });
   });
 
+  it("überspringt ca./circa/etwa/ungefähr vor einer Zahl", () => {
+    const zorbel = { quantity: 200, quantityMax: null, unit: "g", name: "Zorbel" };
+    expect(parseIngredientLine("ca. 200 g Zorbel")).toEqual(zorbel);
+    expect(parseIngredientLine("Ca 200 g Zorbel")).toEqual(zorbel);
+    expect(parseIngredientLine("circa 200 g Zorbel")).toEqual(zorbel);
+    expect(parseIngredientLine("etwa 200 g Zorbel")).toEqual(zorbel);
+    expect(parseIngredientLine("ungefähr 2-3 Quimben")).toEqual({ quantity: 2, quantityMax: 3, unit: null, name: "Quimben" });
+  });
+
+  it("lässt ca./etwa ohne folgende Zahl stehen", () => {
+    expect(parseIngredientLine("etwa eine Handvoll Plimme").name).toBe("etwa eine Handvoll Plimme");
+    expect(parseIngredientLine("Cafeplimme").name).toBe("Cafeplimme");
+  });
+
   it("behält eine Zahl ohne Namen als Namen, damit nichts verloren geht", () => {
     expect(parseIngredientLine("200 g")).toEqual({ quantity: null, quantityMax: null, unit: null, name: "200 g" });
   });

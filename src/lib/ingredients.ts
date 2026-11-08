@@ -30,8 +30,11 @@ function parseNumber(text: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+// "ca. 200 g", "etwa 2-3": Angabe ungefähr, gerechnet wird mit der Zahl. Nur direkt vor einer Zahl.
+const APPROX = /^(?:ca\.?|circa|etwa|ungefähr)\s+(?=[\d¼½¾⅓⅔⅛])/i;
+
 export function parseIngredientLine(line: string): Ingredient {
-  const text = line.trim().replace(/\s+/g, " ");
+  const text = line.trim().replace(/\s+/g, " ").replace(APPROX, "");
   const asName: Ingredient = { quantity: null, quantityMax: null, unit: null, name: text };
 
   // "Für die Soße:" -> Überschrift. Eine Zeile mit Menge ("2 EL Öl:") bleibt eine Zutat.

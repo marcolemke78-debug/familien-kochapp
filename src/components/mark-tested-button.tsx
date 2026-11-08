@@ -1,10 +1,10 @@
 "use client";
-// "Haben wir getestet" je Gerät: setzt den Status auf "getestet"
+// "Als getestet markieren" je Gerät: setzt den Status auf "getestet". Das Gerät steht schon auf dem Badge darüber.
 import { useState, useTransition } from "react";
 import { BadgeCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { markDeviceTested } from "@/app/rezepte/actions";
-import { deviceShort, type Device } from "@/lib/recipe-meta";
+import type { Device } from "@/lib/recipe-meta";
 
 export function MarkTestedButton({ recipeId, device }: { recipeId: number; device: Device }) {
   const [pending, startTransition] = useTransition();
@@ -24,7 +24,7 @@ export function MarkTestedButton({ recipeId, device }: { recipeId: number; devic
         }
       >
         <BadgeCheck aria-hidden />
-        {pending ? "Wird gespeichert …" : `Haben wir im ${deviceShort(device)} getestet`}
+        {pending ? "Wird gespeichert …" : "Als getestet markieren"}
       </Button>
       {error && (
         <p role="alert" className="text-sm text-destructive">

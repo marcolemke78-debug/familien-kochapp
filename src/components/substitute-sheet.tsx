@@ -19,7 +19,9 @@ export type SubstituteIngredient = {
 type Suggestions = Extract<SuggestResult, { ok: true }>["suggestions"];
 
 export function SubstituteSheet({ recipeId, ingredients }: { recipeId: number; ingredients: SubstituteIngredient[] }) {
-  const [selected, setSelected] = useState<Set<number>>(() => new Set(ingredients.filter((i) => i.mine && !i.myReplacement).map((i) => i.position)));
+  // Vorauswahl: eigene Treffer ohne Ersatz. Wird bei jedem Öffnen neu gesetzt, damit keine alte Auswahl hängen bleibt.
+  const preselected = () => new Set(ingredients.filter((i) => i.mine && !i.myReplacement).map((i) => i.position));
+  const [selected, setSelected] = useState<Set<number>>(preselected);
   const [suggestions, setSuggestions] = useState<Suggestions | null>(null);
   const [approved, setApproved] = useState<Record<string, string>>({}); // name → gerade freigegebener Ersatz
   const [error, setError] = useState<string | null>(null);
@@ -64,7 +66,16 @@ export function SubstituteSheet({ recipeId, ingredients }: { recipeId: number; i
   const existing = ingredients.filter((i) => i.myReplacement);
 
   return (
-    <Sheet onOpenChange={(open) => !open && (setSuggestions(null), setApproved({}), setError(null))}>
+    <Sheet
+      onOpenChange={(open) => {
+        if (open) setSelected(preselected());
+        else {
+          setSuggestions(null);
+          setApproved({});
+          setError(null);
+        }
+      }}
+    >
       <SheetTrigger render={<Button variant="outline" className="w-full" />}>
         <Replace aria-hidden />
         Diese Zutaten besser nicht
