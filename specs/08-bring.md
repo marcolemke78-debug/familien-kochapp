@@ -25,16 +25,18 @@ Als Familienmitglied möchte ich die Zutaten eines Rezepts (in der gewählten Po
 ## Akzeptanzkriterien
 
 - [x] Ergebnis der Bring-Prüfung als ADR in `guidelines.md` (ADR-005)
-- [ ] Knopf „Zu Bring“ auf der Rezeptseite, überträgt die aktuelle Portionenzahl
-- [ ] Funktioniert auf iPhone (Bring-App öffnet sich) und am Mac (Web)
+- [x] Knopf „Zu Bring“ auf der Rezeptseite, überträgt die aktuelle Portionenzahl
+- [x] Funktioniert auf iPhone (Bring-App öffnet sich, getestet 08.11.2026)
+- [ ] … und am Mac (Web)
 - [x] Fallback „Liste teilen“ vorhanden
 
 ## Tasks
 
 - [x] Dev-Guide lesen, Testaufruf (Schnittstelle antwortet; localhost wird mit 403 abgelehnt)
 - [x] Umsetzung gemäß ADR: `src/lib/bring.ts` (TDD), Migration `0007_bring_exports.sql`, Route `/bring/[token]`, `bring-actions.ts`, `bring-buttons.tsx`
-- [ ] Cloudflare Access: Bypass für `/bring/` (Marco)
-- [ ] Live-Test mit erfundenem Rezept, dann mit Marcos Bring-Liste auf iPhone und Mac
+- [x] Cloudflare Access: eigene Anwendung `…workers.dev/bring/` mit Policy „Bring-Export ohne Login“ (Bypass, Everyone), geprüft: nur `/bring/…` offen
+- [x] Live-Test auf dem iPhone mit Marcos Bring-Liste
+- [ ] Live-Test am Mac
 
 ## Validation
 
@@ -45,4 +47,9 @@ Als Familienmitglied möchte ich die Zutaten eines Rezepts (in der gewählten Po
 - `rules/code-conventions.md`
 
 ## Debrief
+
+- **Weg:** Bring liest die Rezeptseite selbst, erst beim Import. Darum kurzlebige Export-Adresse `/bring/<token>` (10 min, nur Titel, Portionen, Zutaten mit freigegebenem Ersatz), in Cloudflare Access als eigene Anwendung mit Bypass nur für `/bring/`. Details: ADR-005.
+- **Stolperstein:** Bring lehnt localhost-Adressen mit 403 ab, der eigentliche Import lässt sich nur live testen.
+- **Dev-Server:** Nach `next typegen` hing der laufende Dev-Server in einer Fast-Refresh-Schleife (Seite lädt endlos neu). Neustart behebt es.
+- **Bekannte Grenze:** Die Menge des Ersatzes rechnet nicht mit dem Portionen-Regler mit (wie Spec 06). Bring rechnet die ganze Liste selbst um.
 
