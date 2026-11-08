@@ -42,7 +42,7 @@ describe("parseIngredientLine", () => {
 
   it("versteht Spannen wie 2-3", () => {
     expect(parseIngredientLine("2-3 Zehen Knoblauch")).toEqual({ quantity: 2, quantityMax: 3, unit: "Zehen", name: "Knoblauch" });
-    expect(parseIngredientLine("2 – 3 Karotten")).toEqual({ quantity: 2, quantityMax: 3, unit: null, name: "Karotten" });
+    expect(parseIngredientLine("2 – 3 Zorbeln")).toEqual({ quantity: 2, quantityMax: 3, unit: null, name: "Zorbeln" });
   });
 
   it("lässt Zeilen ohne Zahl unverändert", () => {
@@ -73,7 +73,7 @@ describe("formatIngredient", () => {
   it("setzt die Zeile wieder zusammen", () => {
     expect(formatIngredient({ quantity: 200, quantityMax: null, unit: "g", name: "Mehl" })).toBe("200 g Mehl");
     expect(formatIngredient({ quantity: 1.5, quantityMax: null, unit: "EL", name: "Senf" })).toBe("1½ EL Senf");
-    expect(formatIngredient({ quantity: 2, quantityMax: 3, unit: null, name: "Karotten" })).toBe("2–3 Karotten");
+    expect(formatIngredient({ quantity: 2, quantityMax: 3, unit: null, name: "Zorbeln" })).toBe("2–3 Zorbeln");
     expect(formatIngredient({ quantity: null, quantityMax: null, unit: null, name: "Salz" })).toBe("Salz");
   });
 
