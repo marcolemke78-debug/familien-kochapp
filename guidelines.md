@@ -73,4 +73,18 @@ Format pro Eintrag: Kontext / Entscheidung / Warum / Alternativen.
 
 ---
 
+## ADR-005 — Einkaufsliste über Bring per kurzlebiger Export-Adresse
+
+**Datum:** 08.11.2026
+
+**Kontext:** Spec 08. Bring bietet für Rezepte einen Import über `api.getbring.com/rest/bringrecipes/deeplink?url=…&source=web&baseQuantity=…&requestedQuantity=…` (Bring Import Dev Guide, Web-to-App). Die Schnittstelle antwortet sofort mit einer Weiterleitung auf einen App-Link (`getbring.onelink.me/…`). Die Rezeptseite liest Bring erst beim Import, sie muss dann ohne Login erreichbar sein (schema.org `Recipe`). Hinter Cloudflare Access geht das nicht. localhost-Adressen lehnt Bring mit 403 ab, darum lässt sich der Weg nur live testen.
+
+**Entscheidung:** „Zu Bring“ legt in D1 (`bring_exports`) ein Zufalls-Token an, gültig 10 Minuten. Die Route `/bring/<token>` liefert nur Titel, Portionen und Zutaten (JSON-LD und schlichtes HTML), kein Foto, keine Allergien, `noindex`, `no-store`. Freigegebener Ersatz ist eingerechnet (ein Topf für alle, wie bei den Nährwerten). Bring rechnet die Portionen selbst um. In Cloudflare Access hat nur der Pfad `/bring/` eine eigene Anwendung mit Regel „Bypass“. Ohne Login gibt es nur die Bring-Route. Abgelaufene Tokens räumt der nächste Export weg. Fallback „Liste teilen“ (Web Share API, sonst Zwischenablage).
+
+**Alternativen:** Inoffizielle Bring-API mit Passwort-Login (Zugangsdaten gehören nicht in die App, Out of Scope); Export-Datei im öffentlichen R2-Bucket (mehr Aufwand fürs Aufräumen, kein Vorteil); signierte URL ohne Tabelle (bräuchte ein weiteres Secret).
+
+**Datenschutz:** Bring bekommt Titel und Zutatenliste der exportierten Rezepte. Die Token sind 128 Bit zufällig und nach 10 Minuten wertlos.
+
+---
+
 <!-- Weitere ADRs hier einfügen -->

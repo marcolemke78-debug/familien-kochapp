@@ -177,7 +177,12 @@ export default async function RecipePage({ params, searchParams }: PageProps<"/r
 
       <div className={cn("grid gap-10", variants.length > 0 ? "mt-6" : "mt-10", "lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-12")}>
         <div className="lg:sticky lg:top-24 lg:self-start">
-          <ScaledIngredients ingredients={recipe.ingredients} baseServings={recipe.servings} marks={marks} />
+          <ScaledIngredients
+            ingredients={recipe.ingredients}
+            baseServings={recipe.servings}
+            marks={marks}
+            shopping={{ recipeId: recipe.id, title: recipe.title, ingredients: withSubstitutes.ingredients }}
+          />
           <div className="mt-4">
             <SubstituteSheet recipeId={recipe.id} ingredients={substituteIngredients} />
           </div>

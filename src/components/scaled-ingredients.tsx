@@ -7,10 +7,17 @@ import { scaleIngredient, formatQuantity } from "@/lib/scale";
 import type { Ingredient } from "@/lib/ingredients";
 import type { IngredientMark } from "@/lib/allergens";
 import { cn } from "@/lib/utils";
+import { BringButtons } from "@/components/bring-buttons";
 
 // Farbstreifen links als inset-Schatten, damit die Mengenspalte nicht verrutscht
 // marks: Allergie-Markierung je Zutat (gleiche Reihenfolge), vom Server berechnet
-type Props = { ingredients: Ingredient[]; baseServings: number; marks?: (IngredientMark | null)[] };
+// shopping: für "Zu Bring" / "Liste teilen", Zutaten mit freigegebenem Ersatz (ein Topf für alle)
+type Props = {
+  ingredients: Ingredient[];
+  baseServings: number;
+  marks?: (IngredientMark | null)[];
+  shopping?: { recipeId: number; title: string; ingredients: Ingredient[] };
+};
 
 const MARK_STYLE = {
   red: { row: "bg-destructive/8 shadow-[inset_4px_0_0_var(--color-destructive)]", text: "text-destructive", Icon: OctagonAlert },
@@ -18,7 +25,7 @@ const MARK_STYLE = {
   ok: { row: "bg-emerald-600/8 shadow-[inset_4px_0_0_var(--color-emerald-600)]", text: "text-emerald-700 dark:text-emerald-400", Icon: CircleCheck },
 } as const;
 
-export function ScaledIngredients({ ingredients, baseServings, marks = [] }: Props) {
+export function ScaledIngredients({ ingredients, baseServings, marks = [], shopping }: Props) {
   const [servings, setServings] = useState(baseServings);
   const factor = servings / baseServings;
 
@@ -97,6 +104,7 @@ export function ScaledIngredients({ ingredients, baseServings, marks = [] }: Pro
           );
         })}
       </ul>
+      {shopping && <BringButtons {...shopping} baseServings={baseServings} servings={servings} />}
     </section>
   );
 }
